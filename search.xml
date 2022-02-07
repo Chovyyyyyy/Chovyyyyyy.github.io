@@ -79,40 +79,6 @@
       </tags>
   </entry>
   <entry>
-    <title>goRPC（1）编译码器和简易客户端服务器实现</title>
-    <url>/2021/12/30/RPC-Part1-%E7%BC%96%E8%AF%91%E7%A0%81%E5%99%A8%E5%92%8C%E7%AE%80%E6%98%93%E5%AE%A2%E6%88%B7%E7%AB%AF%E6%9C%8D%E5%8A%A1%E5%99%A8%E5%AE%9E%E7%8E%B0/</url>
-    <content><![CDATA[<h1 id="goRPC"><a href="#goRPC" class="headerlink" title="goRPC"></a>goRPC</h1><p>这次没有使用Java去实现RPC框架，虽然Java的生态很完整，有netty框架等等，但是出于接下来的6.824（lab2A写完了，确实是有难度，寒假再说）需要用go实现的原因，想要利用RPC框架提升自己go的工程能力；其次，go处理并发问题较Java更为方便，代码相对更加简洁</p>
-<span id="more"></span>
-
-<h2 id="RPC框架"><a href="#RPC框架" class="headerlink" title="RPC框架"></a>RPC框架</h2><p>RPC是一种计算机通信协议，允许调用不同进程空间的程序。</p>
-<p>不同应用程序之间的通信方式有很多，比如我们平时写crud项目经常用到的基于HTTP协议的Restful API。相比于RPC，Rest API标准统一，更通用，兼容性更好，支持不同种语言，可读性也很好。但是缺点也很多：</p>
-<ul>
-<li>Restful需要额外定义，而RPC可以直接调用</li>
-<li>基于HTTP协议的Restful报文冗余，承载了过多的无效信息，而RPC通常都是自定义的</li>
-<li>相比于Restful，RPC很灵活，更容易扩展集成，比方说负载均衡，微服务的注册中心</li>
-</ul>
-<p>在微服务和分布式系统中，客户端关心的是自己能否获取到结果，和服务端之间并不互相感知，服务端启动时将自己注册到注册中心，客户端调用时，从注册中心获取所有可用的实例，选择一个来调用。注册中心需要实现服务动态添加，删除，使用心跳确保服务处于可用状态等等</p>
-<h1 id="Part-1"><a href="#Part-1" class="headerlink" title="Part 1"></a>Part 1</h1><h3 id="消息的编码和译码"><a href="#消息的编码和译码" class="headerlink" title="消息的编码和译码"></a>消息的编码和译码</h3><p>通常客户端发送的请求包括服务名，方法名，参数三个，服务端的响应包括错误<code>error</code>，返回值<code>reply</code>两个。我们将请求和响应中的参数和返回值抽象为<code>body</code>，剩余的信息存放到<code>header</code></p>
-<h3 id="通信过程"><a href="#通信过程" class="headerlink" title="通信过程"></a>通信过程</h3><p>HTTP报文分为<code>header</code>和<code>body</code>，<code>body</code>的格式和长度通过<code>header</code>中的<code>Content-Type</code>和<code>Content-Length</code>决定，服务端通过解析<code>header</code>就能知道如何从<code>body</code>获取信息</p>
-<p>RPC报文根据HTTP报文进行设计。为了提升性能，所以会压缩长度，一般在开头会规划固定字节，来协商相关信息</p>
-<h3 id="服务端实现"><a href="#服务端实现" class="headerlink" title="服务端实现"></a>服务端实现</h3><p>关键点是三个阶段：</p>
-<ul>
-<li>readRequest</li>
-<li>handleRequest</li>
-<li>sendRequest</li>
-</ul>
-<p>代码是并发处理请求的，但是回复请求如果并发回复会导致消息错乱，所以要使用<code>lock</code></p>
-<h3 id="客户端实现"><a href="#客户端实现" class="headerlink" title="客户端实现"></a>客户端实现</h3><p>我们实现了一个消息的编译码器，并且客户端与服务端实现了简单的协议交换。同时实现了简易服务端，建立连接，读取，处理并回复客户端的请求</p>
-<p><a href="https://github.com/Chovyyyyyy/goRPC/tree/main/mainCodec">编译码器和简易客户端服务器实现的github地址</a></p>
-]]></content>
-      <categories>
-        <category>RPC</category>
-      </categories>
-      <tags>
-        <tag>RPC</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>goRPC（2）高性能客户端</title>
     <url>/2021/12/31/RPC-Part2-%E9%AB%98%E6%80%A7%E8%83%BD%E5%AE%A2%E6%88%B7%E7%AB%AF/</url>
     <content><![CDATA[<h1 id="高性能服务端"><a href="#高性能服务端" class="headerlink" title="高性能服务端"></a>高性能服务端</h1><h2 id="Call的设计"><a href="#Call的设计" class="headerlink" title="Call的设计"></a>Call的设计</h2><p>对<code>rpc</code>包来说，一个函数需要能够被远程调用，需要满足：</p>
@@ -159,41 +125,31 @@
       </tags>
   </entry>
   <entry>
-    <title>goRPC（3）注册中心实现</title>
-    <url>/2022/01/06/RPC-Part3-%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83/</url>
-    <content><![CDATA[<h2 id="将结构体映射为服务"><a href="#将结构体映射为服务" class="headerlink" title="将结构体映射为服务"></a>将结构体映射为服务</h2><p>RPC框架的一个基础能力是：像调用本地程序一样调用远程服务。对于go来说，这个问题就变成如何将结构体映射为服务</p>
+    <title>goRPC（1）编译码器和简易客户端服务器实现</title>
+    <url>/2021/12/30/RPC-Part1-%E7%BC%96%E8%AF%91%E7%A0%81%E5%99%A8%E5%92%8C%E7%AE%80%E6%98%93%E5%AE%A2%E6%88%B7%E7%AB%AF%E6%9C%8D%E5%8A%A1%E5%99%A8%E5%AE%9E%E7%8E%B0/</url>
+    <content><![CDATA[<h1 id="goRPC"><a href="#goRPC" class="headerlink" title="goRPC"></a>goRPC</h1><p>这次没有使用Java去实现RPC框架，虽然Java的生态很完整，有netty框架等等，但是出于接下来的6.824（lab2A写完了，确实是有难度，寒假再说）需要用go实现的原因，想要利用RPC框架提升自己go的工程能力；其次，go处理并发问题较Java更为方便，代码相对更加简洁</p>
 <span id="more"></span>
 
-<p>对<code>net/rpc</code>来说，一个函数需要能够被远程调用，需要满足</p>
-<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(t *T)</span> <span class="title">MethodName</span><span class="params">(argType T1, replyType *T2)</span> <span class="title">error</span></span></span><br></pre></td></tr></table></figure>
-
-<p>假如客户端发送一个请求，包含Method和Argv，我们就可以用通过反射获取某个结构体的所有方法，并且通过方法，获取到该方法所有的参数类型与返回值</p>
-<h2 id="通过反射实现service"><a href="#通过反射实现service" class="headerlink" title="通过反射实现service"></a>通过反射实现service</h2><h3 id="定义结构体methodType"><a href="#定义结构体methodType" class="headerlink" title="定义结构体methodType"></a>定义结构体methodType</h3><figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="keyword">type</span> methodType <span class="keyword">struct</span> &#123;</span><br><span class="line">	method    reflect.Method</span><br><span class="line">	ArgType   reflect.Type</span><br><span class="line">	ReplyType reflect.Type</span><br><span class="line">	numCalls  <span class="keyword">uint64</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-
-
-<p>每个methodType实例包含了一个方法的完整信息</p>
+<h2 id="RPC框架"><a href="#RPC框架" class="headerlink" title="RPC框架"></a>RPC框架</h2><p>RPC是一种计算机通信协议，允许调用不同进程空间的程序。</p>
+<p>不同应用程序之间的通信方式有很多，比如我们平时写crud项目经常用到的基于HTTP协议的Restful API。相比于RPC，Rest API标准统一，更通用，兼容性更好，支持不同种语言，可读性也很好。但是缺点也很多：</p>
 <ul>
-<li>method：方法本身</li>
-<li>ArgType：第一个参数的类型</li>
-<li>ReplyType：第二个参数的类型</li>
-<li>numCalls：后续统计方法调用次数时会用到</li>
+<li>Restful需要额外定义，而RPC可以直接调用</li>
+<li>基于HTTP协议的Restful报文冗余，承载了过多的无效信息，而RPC通常都是自定义的</li>
+<li>相比于Restful，RPC很灵活，更容易扩展集成，比方说负载均衡，微服务的注册中心</li>
 </ul>
-<h3 id="定义结构体service"><a href="#定义结构体service" class="headerlink" title="定义结构体service"></a>定义结构体service</h3><figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="keyword">type</span> service <span class="keyword">struct</span> &#123;</span><br><span class="line">	name   <span class="keyword">string</span></span><br><span class="line">	typ    reflect.Type</span><br><span class="line">	rcvr   reflect.Value</span><br><span class="line">	method <span class="keyword">map</span>[<span class="keyword">string</span>]*methodType</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
+<p>在微服务和分布式系统中，客户端关心的是自己能否获取到结果，和服务端之间并不互相感知，服务端启动时将自己注册到注册中心，客户端调用时，从注册中心获取所有可用的实例，选择一个来调用。注册中心需要实现服务动态添加，删除，使用心跳确保服务处于可用状态等等</p>
+<h1 id="Part-1"><a href="#Part-1" class="headerlink" title="Part 1"></a>Part 1</h1><h3 id="消息的编码和译码"><a href="#消息的编码和译码" class="headerlink" title="消息的编码和译码"></a>消息的编码和译码</h3><p>通常客户端发送的请求包括服务名，方法名，参数三个，服务端的响应包括错误<code>error</code>，返回值<code>reply</code>两个。我们将请求和响应中的参数和返回值抽象为<code>body</code>，剩余的信息存放到<code>header</code></p>
+<h3 id="通信过程"><a href="#通信过程" class="headerlink" title="通信过程"></a>通信过程</h3><p>HTTP报文分为<code>header</code>和<code>body</code>，<code>body</code>的格式和长度通过<code>header</code>中的<code>Content-Type</code>和<code>Content-Length</code>决定，服务端通过解析<code>header</code>就能知道如何从<code>body</code>获取信息</p>
+<p>RPC报文根据HTTP报文进行设计。为了提升性能，所以会压缩长度，一般在开头会规划固定字节，来协商相关信息</p>
+<h3 id="服务端实现"><a href="#服务端实现" class="headerlink" title="服务端实现"></a>服务端实现</h3><p>关键点是三个阶段：</p>
 <ul>
-<li>name：映射的结构体的名称</li>
-<li>typ：结构体的类型</li>
-<li>rcvr：结构体实例本身</li>
-<li>method：存储映射的结构体的所有符合条件的方法</li>
+<li>readRequest</li>
+<li>handleRequest</li>
+<li>sendRequest</li>
 </ul>
-<h2 id="集成到服务端"><a href="#集成到服务端" class="headerlink" title="集成到服务端"></a>集成到服务端</h2><p>从接收到请求到回复还差以下几个步骤：</p>
-<ol>
-<li>根据入参类型，将请求的body反序列化</li>
-<li>调用<code>service.call</code>，完成方法调用</li>
-<li>将<code>reply</code>序列化为字节流，构造响应报文，返回</li>
-</ol>
-<p><a href="https://github.com/Chovyyyyyy/goRPC/tree/main/service">注册中心的github地址</a></p>
+<p>代码是并发处理请求的，但是回复请求如果并发回复会导致消息错乱，所以要使用<code>lock</code></p>
+<h3 id="客户端实现"><a href="#客户端实现" class="headerlink" title="客户端实现"></a>客户端实现</h3><p>我们实现了一个消息的编译码器，并且客户端与服务端实现了简单的协议交换。同时实现了简易服务端，建立连接，读取，处理并回复客户端的请求</p>
+<p><a href="https://github.com/Chovyyyyyy/goRPC/tree/main/mainCodec">编译码器和简易客户端服务器实现的github地址</a></p>
 ]]></content>
       <categories>
         <category>RPC</category>
@@ -241,6 +197,50 @@
 <li><code>time.After()</code>先于called接收到消息，说明处理超时，called和sent都将被阻塞。在<code>case&lt;-time.After(timeout)</code>处调用<code>sendResponse</code></li>
 </ol>
 <p><a href="https://github.com/Chovyyyyyy/goRPC/tree/main/timeout">超时处理的github地址</a></p>
+]]></content>
+      <categories>
+        <category>RPC</category>
+      </categories>
+      <tags>
+        <tag>RPC</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>goRPC（3）注册中心实现</title>
+    <url>/2022/01/06/RPC-Part3-%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83/</url>
+    <content><![CDATA[<h2 id="将结构体映射为服务"><a href="#将结构体映射为服务" class="headerlink" title="将结构体映射为服务"></a>将结构体映射为服务</h2><p>RPC框架的一个基础能力是：像调用本地程序一样调用远程服务。对于go来说，这个问题就变成如何将结构体映射为服务</p>
+<span id="more"></span>
+
+<p>对<code>net/rpc</code>来说，一个函数需要能够被远程调用，需要满足</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(t *T)</span> <span class="title">MethodName</span><span class="params">(argType T1, replyType *T2)</span> <span class="title">error</span></span></span><br></pre></td></tr></table></figure>
+
+<p>假如客户端发送一个请求，包含Method和Argv，我们就可以用通过反射获取某个结构体的所有方法，并且通过方法，获取到该方法所有的参数类型与返回值</p>
+<h2 id="通过反射实现service"><a href="#通过反射实现service" class="headerlink" title="通过反射实现service"></a>通过反射实现service</h2><h3 id="定义结构体methodType"><a href="#定义结构体methodType" class="headerlink" title="定义结构体methodType"></a>定义结构体methodType</h3><figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="keyword">type</span> methodType <span class="keyword">struct</span> &#123;</span><br><span class="line">	method    reflect.Method</span><br><span class="line">	ArgType   reflect.Type</span><br><span class="line">	ReplyType reflect.Type</span><br><span class="line">	numCalls  <span class="keyword">uint64</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<p>每个methodType实例包含了一个方法的完整信息</p>
+<ul>
+<li>method：方法本身</li>
+<li>ArgType：第一个参数的类型</li>
+<li>ReplyType：第二个参数的类型</li>
+<li>numCalls：后续统计方法调用次数时会用到</li>
+</ul>
+<h3 id="定义结构体service"><a href="#定义结构体service" class="headerlink" title="定义结构体service"></a>定义结构体service</h3><figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="keyword">type</span> service <span class="keyword">struct</span> &#123;</span><br><span class="line">	name   <span class="keyword">string</span></span><br><span class="line">	typ    reflect.Type</span><br><span class="line">	rcvr   reflect.Value</span><br><span class="line">	method <span class="keyword">map</span>[<span class="keyword">string</span>]*methodType</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>name：映射的结构体的名称</li>
+<li>typ：结构体的类型</li>
+<li>rcvr：结构体实例本身</li>
+<li>method：存储映射的结构体的所有符合条件的方法</li>
+</ul>
+<h2 id="集成到服务端"><a href="#集成到服务端" class="headerlink" title="集成到服务端"></a>集成到服务端</h2><p>从接收到请求到回复还差以下几个步骤：</p>
+<ol>
+<li>根据入参类型，将请求的body反序列化</li>
+<li>调用<code>service.call</code>，完成方法调用</li>
+<li>将<code>reply</code>序列化为字节流，构造响应报文，返回</li>
+</ol>
+<p><a href="https://github.com/Chovyyyyyy/goRPC/tree/main/service">注册中心的github地址</a></p>
 ]]></content>
       <categories>
         <category>RPC</category>
