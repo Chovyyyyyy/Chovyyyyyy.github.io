@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"lehends.cn","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="Part A: Key&#x2F;value service without snapshots本实验要求你使用lab 2中的Raft库构建一个容错的Key&#x2F;Value服务。你的Key&#x2F;Value服务应该是由几个使用Raft来维护复制的key&#x2F;value服务器组成的一个复制状态机。尽管存在一些其他故障或网络分区，但只要大多数服务器还活着并可以通信，你的key&#x2F;value服务就应该继续处理客户端请求。但客户端">
+<meta property="og:type" content="article">
+<meta property="og:title" content="kvRaft实现">
+<meta property="og:url" content="http://lehends.cn/2022/02/07/kvRaft%E5%AE%9E%E7%8E%B0/index.html">
+<meta property="og:site_name" content="Lehends的博客">
+<meta property="og:description" content="Part A: Key&#x2F;value service without snapshots本实验要求你使用lab 2中的Raft库构建一个容错的Key&#x2F;Value服务。你的Key&#x2F;Value服务应该是由几个使用Raft来维护复制的key&#x2F;value服务器组成的一个复制状态机。尽管存在一些其他故障或网络分区，但只要大多数服务器还活着并可以通信，你的key&#x2F;value服务就应该继续处理客户端请求。但客户端">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2022-02-07T02:49:41.000Z">
+<meta property="article:modified_time" content="2022-02-07T04:18:08.398Z">
+<meta property="article:author" content="Lehends">
+<meta property="article:tag" content="基于raft实现分布式KV">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://lehends.cn/2022/02/07/kvRaft%E5%AE%9E%E7%8E%B0/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>kvRaft实现 | Lehends的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Lehends的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">后端日常</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签<span class="badge">3</span></a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类<span class="badge">3</span></a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">13</span></a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://lehends.cn/2022/02/07/kvRaft%E5%AE%9E%E7%8E%B0/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/myAvatar.jpg">
+      <meta itemprop="name" content="Lehends">
+      <meta itemprop="description" content="Lehends的个人博客">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Lehends的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          kvRaft实现
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2022-02-07 10:49:41 / 修改时间：12:18:08" itemprop="dateCreated datePublished" datetime="2022-02-07T10:49:41+08:00">2022-02-07</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%9F%BA%E4%BA%8Eraft%E5%AE%9E%E7%8E%B0%E5%88%86%E5%B8%83%E5%BC%8FKV/" itemprop="url" rel="index"><span itemprop="name">基于raft实现分布式KV</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="Part-A-Key-value-service-without-snapshots"><a href="#Part-A-Key-value-service-without-snapshots" class="headerlink" title="Part A: Key/value service without snapshots"></a>Part A: Key/value service without snapshots</h2><p>本实验要求你使用lab 2中的Raft库构建一个容错的Key/Value服务。你的Key/Value服务应该是由几个使用Raft来维护复制的key/value服务器组成的一个复制状态机。尽管存在一些其他故障或网络分区，但只要大多数服务器还活着并可以通信，你的key/value服务就应该继续处理客户端请求。<br>但客户端如何与Raft进行交互呢？正如<a target="_blank" rel="noopener" href="https://thesquareplanet.com/blog/students-guide-to-raft/#applications-on-top-of-raft">Raft学生指南的“在Raft之上的应用”</a>一节所述：</p>
+<blockquote>
+<p>你可能对你甚至将如何根据一个复制的日志实现一个应用程序感到困惑……服务应该被构造为一个<strong>状态机</strong>，其中客户端操作将机器从一个状态转换到另一个状态。</p>
+</blockquote>
+<p>你的服务应该支持<code>Put(key, value)</code>，<code>Append(key, arg)</code>和<code>Get(key)</code>这些操作。每个客户端通过<code>Clerk</code>的<code>Put/Append/Get</code>方法与服务通信。<code>Clerk</code>管理与服务器的RPC交互。你的服务应该为调用<code>Clerk</code>的<code>Get/Put/Append</code>方法的应用程序提供<strong>强一致性</strong>。</p>
+<blockquote>
+<p>你的每个key/value服务器都将有一个关联的Raft对等点(peer)。Clerks将<code>Put()</code>，<code>Append()</code>和<code>Get()</code>RPCs发送到其关联的Raft是领导者的kvserver。kvserver的代码将<code>Put/Append/Get</code>操作提交给Raft，以便Raft日志保存一个<code>Put/Append/Get</code>操作的序列。<strong>所有的kvserver</strong>都按顺序从Raft日志中执行操作，将这些操作应用到它们的key/value数据库；目的是让这些服务器维护key/value数据库的相同副本。<br>Clerk有时不知道哪个kvserver是Raft的领导者。如果Clerk将一个RPC发送到错误的kvserver，或者它无法到达kvserver，Clerk应该通过发送到一个不同的kvserver来重试。如果key/value服务器将操作提交到它的Raft日志(并因此将该操作应用到key/value状态机)，则领导者通过响应其RPC将结果报告给Clerk。如果操作未能提交(例如，如果领导者被替换)，服务器报告一个错误，并且Clerk用一个不同的服务器重试。</p>
+</blockquote>
+<p>在这里我们只以一个PutAppend操作作为示例</p>
+<h3 id="Client"><a href="#Client" class="headerlink" title="Client"></a>Client</h3><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(ck *Clerk)</span> <span class="title">PutAppend</span><span class="params">(key <span class="keyword">string</span>, value <span class="keyword">string</span>, opreation <span class="keyword">string</span>)</span></span> &#123;</span><br><span class="line">	<span class="comment">// 线性一致性</span></span><br><span class="line">	ck.requestId++</span><br><span class="line">	requestId := ck.requestId</span><br><span class="line">	server := ck.recentLeaderId</span><br><span class="line">	<span class="keyword">for</span> &#123;</span><br><span class="line">		args := PutAppendArgs&#123;Key: key, Value: value, Opreation : opreation, ClientId: ck.clientId,  RequestId: requestId&#125;</span><br><span class="line">		reply := PutAppendReply&#123;&#125;</span><br><span class="line">		ok := ck.servers[server].Call(<span class="string">&quot;KVServer.PutAppend&quot;</span>, &amp;args, &amp;reply)</span><br><span class="line">		<span class="comment">// 判断请求是否成功以及raft节点是否是leader</span></span><br><span class="line">		<span class="keyword">if</span> !ok || reply.Err == ErrWrongLeader&#123;</span><br><span class="line">			server = (server+<span class="number">1</span>)%<span class="built_in">len</span>(ck.servers)</span><br><span class="line">			<span class="comment">//time.Sleep(100 * time.Millisecond)</span></span><br><span class="line">			<span class="keyword">continue</span></span><br><span class="line">		&#125;</span><br><span class="line">		<span class="comment">// 如果reply是OK则更新recentLeaderId</span></span><br><span class="line">		<span class="keyword">if</span> reply.Err == OK &#123;</span><br><span class="line">			ck.recentLeaderId = server</span><br><span class="line">			<span class="keyword">return</span></span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="Server"><a href="#Server" class="headerlink" title="Server"></a>Server</h3><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(kv *KVServer)</span> <span class="title">PutAppend</span><span class="params">(args *PutAppendArgs, reply *PutAppendReply)</span></span> &#123;</span><br><span class="line">   <span class="keyword">if</span> kv.killed() &#123;</span><br><span class="line">      reply.Err = ErrWrongLeader</span><br><span class="line">      <span class="keyword">return</span></span><br><span class="line">   &#125;</span><br><span class="line"></span><br><span class="line">   _, ifLeader := kv.rf.GetState()</span><br><span class="line">   <span class="keyword">if</span> !ifLeader &#123;</span><br><span class="line">      reply.Err = ErrWrongLeader</span><br><span class="line">      <span class="keyword">return</span></span><br><span class="line">   &#125;</span><br><span class="line"></span><br><span class="line">   op := Op&#123;Operation: args.Opreation, Key: args.Key, Value: args.Value, ClientId: args.ClientId, RequestId: args.RequestId&#125;</span><br><span class="line"></span><br><span class="line">   raftIndex, _, _ := kv.rf.Start(op)</span><br><span class="line">   <span class="comment">// 创建 waitApplyChannel</span></span><br><span class="line">   kv.mu.Lock()</span><br><span class="line">   chForRaftIndex, exist := kv.waitApplyCh[raftIndex]</span><br><span class="line">   <span class="keyword">if</span> !exist &#123;</span><br><span class="line">      kv.waitApplyCh[raftIndex] = <span class="built_in">make</span>(<span class="keyword">chan</span> Op, <span class="number">1</span>)</span><br><span class="line">      chForRaftIndex = kv.waitApplyCh[raftIndex]</span><br><span class="line">   &#125;</span><br><span class="line">   kv.mu.Unlock()</span><br><span class="line"></span><br><span class="line">   <span class="keyword">select</span> &#123;</span><br><span class="line">      <span class="keyword">case</span> &lt;- time.After(time.Millisecond*CONSENSUS_TIMEOUT) :</span><br><span class="line">         <span class="keyword">if</span> kv.isRequestDuplicate(op.ClientId,op.RequestId)&#123;</span><br><span class="line">            reply.Err = OK</span><br><span class="line">         &#125; <span class="keyword">else</span>&#123;</span><br><span class="line">            reply.Err = ErrWrongLeader</span><br><span class="line">         &#125;</span><br><span class="line"></span><br><span class="line">      <span class="keyword">case</span> raftCommitOp := &lt;- chForRaftIndex :</span><br><span class="line">         <span class="keyword">if</span> raftCommitOp.ClientId == op.ClientId &amp;&amp; raftCommitOp.RequestId == op.RequestId  &#123;</span><br><span class="line">            reply.Err = OK</span><br><span class="line">         &#125;<span class="keyword">else</span>&#123;</span><br><span class="line">            reply.Err = ErrWrongLeader</span><br><span class="line">         &#125;</span><br><span class="line"></span><br><span class="line">   &#125;</span><br><span class="line">   kv.mu.Lock()</span><br><span class="line">   <span class="built_in">delete</span>(kv.waitApplyCh,raftIndex)</span><br><span class="line">   kv.mu.Unlock()</span><br><span class="line">   <span class="keyword">return</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="客户端请求重复检测"><a href="#客户端请求重复检测" class="headerlink" title="客户端请求重复检测"></a>客户端请求重复检测</h3><p>正如开头提到的，你的服务必须为调用Clerk的<code>Get/Put/Append</code>方法的应用程序提供<strong>强一致性</strong>。这里是强一致性的定义：</p>
+<blockquote>
+<p>如果一次调用一个，则<code>Get/Put/Append</code>方法应该像只有一个状态副本的系统那样执行，并且每个调用都应该观察到之前调用的序列隐含的对状态的修改。对于并发调用，返回值和最终状态必须像操作以某种顺序一次执行一个操作那样。如果调用在时间上重叠，它就是并发的，比如如果客户端X调用<code>Clerk.Put()</code>，然后客户端Y调用<code>Clerk.Append()</code>，然后客户端X的调用返回。此外，一次调用必须观察到在本次调用开始前已经完成的所有调用的结果(所以我们技术上要求线性一致性)。</p>
+</blockquote>
+<p>正如<a target="_blank" rel="noopener" href="https://pdos.csail.mit.edu/6.824/papers/raft-extended.pdf">raft-extended论文的“第8节 客户端交互”</a>所说：</p>
+<blockquote>
+<p>Raft的目标是实现线性一致性语义(每个操作似乎是瞬时完成的，恰好一次，在其调用和响应之间的某个点)。但是，目前描述的Raft可以执行一个命令多次：例如，如果领导者在提交日志条目之后但响应客户端之前崩溃了，客户端将向新的领导者重试该命令，造成它被第二次执行。</p>
+</blockquote>
+<p>因此，为了实现线性一致性，需要某种重复检测方案——如果一个客户端向你的服务器发送一个APPEND，没有听到回复，并将其重新发送到下一个服务器，则你的apply()函数要确保该APPEND不会被执行两次。<br>我们的重复检测方案是：</p>
+<ol>
+<li>每个客户端都需要一个唯一的客户端ID——可能是一个64位的随机数</li>
+<li>每个客户端为每个请求选择一个序列号seq ，在RPC中发送。在相同的RPC的重新发送中使用相同的seq 。</li>
+<li>客户端在每个RPC中发送客户端ID和seq ，如果它重新发送，则重复seq </li>
+<li>k/v服务负责检测重复客户端请求，为此维护由客户端ID索引的表。我们想要保持该重复表小一点，因此每个客户端一个表条目，而不是每个RPC一个。每个表条目只包含seq，和如果已经执行则包含值。</li>
+<li>RPC处理程序首先检查重复表，只有当seq大于重复表中该客户端的表条目中的seq时才调用<code>Start()</code>。</li>
+<li>每个日志条目(log entry)必须包含客户端ID，seq #。当操作(由日志条目转化为applyMsg再转换为Op)出现在applyCh上时，更新该客户端的table entry中的seq #和值，唤醒等待的RPC处理程序(RPC handler)(如果有的话)。</li>
+<li><strong>每个客户端一次仅有一个未处理的RPC</strong>。</li>
+<li>当服务器收到客户端的#10 RPC时，它可以忘记客户端的较低的条目，<strong>因为这意味着客户端从不会重新发送较旧的RPC</strong>。</li>
+</ol>
+<p>这里面有一个重要的隐含条件：单个客户端的请求是顺序的，也就是说每个客户端都是在上一个请求返回之后，再执行下一个请求的，同一个客户端的请求都是顺序的，不存在并发。正如<a target="_blank" rel="noopener" href="https://pdos.csail.mit.edu/6.824/labs/lab-kvraft.html">Lab 3：容错的Key/Value服务的“Part 3A：没有日志压缩的Key/Value服务”</a>中的提示所述：</p>
+<blockquote>
+<p>可以假设一个客户端一次将只对Clerk做一次调用。</p>
+</blockquote>
+<p>为了去重处理，正如<a target="_blank" rel="noopener" href="https://thesquareplanet.com/blog/students-guide-to-raft/#duplicate-detection">Raft学生指南的“重复检测”</a>一节所说的：</p>
+<blockquote>
+<p>对于每个客户端请求，你需要某种唯一的标识符……有许多方法可以分配这样的标识符。一种简单并且相当有效的方法是给每个客户端一个唯一的标识符，然后让它们用一个单调递增的序列号标记(tag)每个请求。如果一个客户端重新发送一个请求，则它重用相同的序列号。</p>
+</blockquote>
+<p>你的服务应该维护一个以client ID作为索引的map，其中的每个条目对应只含有seq number和如果已经执行的请求的结果值。这个去重map应该称为你的状态机的一部分，所有的副本在它们执行时都应该更新自己的去重map，这样如果它们称为leader，信息已经在那里了。</p>
+<h3 id="客户端超时重试"><a href="#客户端超时重试" class="headerlink" title="客户端超时重试"></a>客户端超时重试</h3><p>客户端需要重试重试机制，这时因为：我们的服务完全是依靠<code>applyCh</code>上出现的<code>applyMsg</code>驱动的，如果某peer作为original leader接收了客户端的请求，但在将请求提交之前失去了领导地位，那么该请求就不会出现在applyCh上，接收该请求的RPC handler一直处于等待状态。又因为线性一致性语义假设一个客户端一次只对Clerk进行一次调用，也就是说本次请求没有得到响应前，不会发起新的请求，这就出现了死锁：kvserver等待客户端发起新的请求，其被提交后出现在applyCh上，以便可以唤醒等待的RPC handler；而RPC handler处于等待状态，无法回复客户端请求，本次客户端请求没有得到响应，无法发起新的请求，整个服务陷入死锁。解决方案有两种：</p>
+<ol>
+<li>RPC handler本身加入检测leader是否被替换的功能，即我们之前实现的<code>detectDeposed goroutine</code>，其周期性地调用<code>rf.GetState()</code>，判断是否不再是leader或者任期发生变化，从而检测leader是否被替换。</li>
+<li>客户端请求加入超时重试机制，超时后主动进行重试。</li>
+</ol>
+<p>发生客户端超时重试时，上次的客户端请求被认为是失败的，再次发起重试。<br>实现客户端超时重试需要两个步骤：</p>
+<ol>
+<li>将目前Clerk同步的RPC调用通过goroutine改为异步，通过一个<code>replyCh</code>可以得到RPC调用的执行结果。</li>
+<li>Clerk发送程序同时监听<code>replyCh</code>和<code>timeoutCh</code>两个事件，如果得到kvserver的请求执行结果则成功返回到客户端；如果执行出错或者超时，则进行重试。</li>
+</ol>
+<h2 id="Part-B-Key-value-service-with-snapshots"><a href="#Part-B-Key-value-service-with-snapshots" class="headerlink" title="Part B: Key/value service with snapshots"></a>Part B: Key/value service with snapshots</h2><p>这里的实现和lab2类似</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">测试人员将maxraftstate传递给您的 StartKVServer()。</span><br><span class="line">maxraftstate表示持久 Raft 状态的最大允许大小（以字节为单位）（包括日志，但不包括快照）。</span><br><span class="line">您应该将maxraftstate与persister.RaftStateSize()进行比较。</span><br><span class="line">每当您的键/值服务器检测到 Raft 状态大小接近此阈值时，它应该使用Snapshot保存快照</span><br><span class="line">，而后者又使用persister.SaveRaftState()。如果maxraftstate为 -1，则不必进行快照。</span><br><span class="line">maxraftstate适用于 Raft 传递给persister.SaveRaftState()的 GOB 编码字节。</span><br></pre></td></tr></table></figure>
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E5%9F%BA%E4%BA%8Eraft%E5%AE%9E%E7%8E%B0%E5%88%86%E5%B8%83%E5%BC%8FKV/" rel="tag"># 基于raft实现分布式KV</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/01/25/raft%E5%AE%9E%E7%8E%B0/" rel="prev" title="raft实现">
+      <i class="fa fa-chevron-left"></i> raft实现
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2022/02/07/shardKv/" rel="next" title="shardKv">
+      shardKv <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Part-A-Key-value-service-without-snapshots"><span class="nav-number">1.</span> <span class="nav-text">Part A: Key&#x2F;value service without snapshots</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Client"><span class="nav-number">1.1.</span> <span class="nav-text">Client</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Server"><span class="nav-number">1.2.</span> <span class="nav-text">Server</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%A2%E6%88%B7%E7%AB%AF%E8%AF%B7%E6%B1%82%E9%87%8D%E5%A4%8D%E6%A3%80%E6%B5%8B"><span class="nav-number">1.3.</span> <span class="nav-text">客户端请求重复检测</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%A2%E6%88%B7%E7%AB%AF%E8%B6%85%E6%97%B6%E9%87%8D%E8%AF%95"><span class="nav-number">1.4.</span> <span class="nav-text">客户端超时重试</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Part-B-Key-value-service-with-snapshots"><span class="nav-number">2.</span> <span class="nav-text">Part B: Key&#x2F;value service with snapshots</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Lehends"
+      src="/images/myAvatar.jpg">
+  <p class="site-author-name" itemprop="name">Lehends</p>
+  <div class="site-description" itemprop="description">Lehends的个人博客</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">13</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Chovyyyyyy" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Chovyyyyyy" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+  <div class="beian"><a href="https://beian.miit.gov.cn/" rel="noopener" target="_blank">粤ICP备2021164567号 </a>
+  </div>
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Lehends</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

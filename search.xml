@@ -1,0 +1,722 @@
+<?xml version="1.0" encoding="utf-8"?>
+<search>
+  <entry>
+    <title>Base理论</title>
+    <url>/2021/12/27/Base%E7%90%86%E8%AE%BA/</url>
+    <content><![CDATA[<h1 id="BASE理论"><a href="#BASE理论" class="headerlink" title="BASE理论"></a>BASE理论</h1><p>BASE是Basically Avaliable（基本可用），Soft-state（软状态）和Eventually Consistent（最终一致性）三个短语的缩写。BASE理论是对CAP中一致性C和可用性A权衡的结果，其来源是对大规模互联网系统分布式事件的总结，是基于CAP定理逐步演化而来的，它大大降低了我们对系统的要求</p>
+<span id="more"></span>
+
+<h2 id="BASE理论的核心思想"><a href="#BASE理论的核心思想" class="headerlink" title="BASE理论的核心思想"></a>BASE理论的核心思想</h2><p>即使无法做到强一致性，但每个应用都可以根据自身业务特点，采用适当的方式来使系统达到最终一致性</p>
+<blockquote>
+<p>也就是牺牲数据的一致性来满足系统的高可用性，系统中一部分数据不可用或者不一致时，仍需要保持系统整体”主要可用“</p>
+</blockquote>
+<p>BASE理论本质上是对CAP的延伸和补充，更具体地说，是对CAP中AP方案的一个补充，AP 方案只是在系统发生分区的时候放弃一致性，而不是永远放弃一致性。在分区故障恢复后，系统应该达到最终一致性。这一点其实就是 BASE 理论延伸的地方。</p>
+<h2 id="BASE-理论三要素"><a href="#BASE-理论三要素" class="headerlink" title="BASE 理论三要素"></a>BASE 理论三要素</h2><p><img src="https://cdn.jsdelivr.net/gh/Chovyyyyyy/blogPhoto/Lehends/202112300203767.png"></p>
+<h3 id="1-基本可用"><a href="#1-基本可用" class="headerlink" title="1. 基本可用"></a>1. 基本可用</h3><p>基本可用是指分布式系统在出现不可预知故障的时候，允许损失部分可用性，这绝不等价于系统不可用</p>
+<p>什么是允许损失部分可用性呢？</p>
+<ul>
+<li>响应时间上的损失：由于系统出现故障，处理请求时间增大</li>
+<li>系统功能上的损失：正常情况下，用户可以使用系统的全部功能，但是由于系统访问量突然剧增，系统的部分非核心功能无法使用</li>
+</ul>
+<h3 id="2，软状态"><a href="#2，软状态" class="headerlink" title="2，软状态"></a>2，软状态</h3><p>软状态值允许系统中的数据存在中间状态（CAP理论中的数据不一致），并认为该中间状态的存在不会影响系统的整体可用性，即允许系统在不同节点的数据副本之间进行数据同步的过程存在延时</p>
+<h3 id="3，最终一致性"><a href="#3，最终一致性" class="headerlink" title="3，最终一致性"></a>3，最终一致性</h3><p>最终一致性强调的是系统中所有的数据副本，在经过一段时间的同步后，最终能够达到一个一致的状态。因此，最终一致性的本质是需要系统保证最终数据能够到达一致，而不需要实时保证数据的强一致性</p>
+<blockquote>
+<p>一致性的3种级别</p>
+<ol>
+<li>强一致性：系统写入了什么，读出来的就是什么</li>
+<li>弱一致性：不一定可以读到最新写入的值，也不保证多少时间之后读取到的数据是最新的，只是会尽量保证某个时刻到达数据一致的状态</li>
+<li>最终一致性：弱一致性的升级版，系统会保证在一定时间内达到数据一致的状态</li>
+</ol>
+<p>一般是最终一致性级别，但是对数据一致要求十分严格的场景比如银行转账要求强一致性</p>
+</blockquote>
+]]></content>
+      <categories>
+        <category>分布式</category>
+      </categories>
+      <tags>
+        <tag>分布式</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>CAP理论</title>
+    <url>/2021/12/27/CAP%E7%90%86%E8%AE%BA/</url>
+    <content><![CDATA[<h1 id="CAP理论"><a href="#CAP理论" class="headerlink" title="CAP理论"></a>CAP理论</h1><p>CAP定理指的是在一个分布式系统中，Consistency（一致性）、 Availability（可用性）、Partition tolerance（分区容错性）这三个基本需求，最多只能同时满足其中的2个</p>
+<span id="more"></span>
+
+<p><img src="https://cdn.jsdelivr.net/gh/Chovyyyyyy/blogPhoto/Lehends/202112280846846.png" alt="img"></p>
+<h2 id="可用性（Availability）"><a href="#可用性（Availability）" class="headerlink" title="可用性（Availability）"></a>可用性（Availability）</h2><p>系统提供的服务必须一致处于可用的状态，每次请求都能获取到非错的响应</p>
+<p>在大型分布式系统中有一个大问题，那就是一些很罕见的问题会被放大。</p>
+<p>对于分布式系统的容错，有很多不同的概念可以表述，有一个共同的思想就是可用性。某些系统经过精心的设计，这样在特定的错误类型下，仍然可以正常运行</p>
+<p>另一个容错特性是自我可恢复性，为了实现这个特性，有很多工具，其中最重要的两个：</p>
+<ul>
+<li>一个是非易失存储：比方说硬盘，闪存，SSD之类的。更新非易失存储是代价很高的操作，所以相应的出现了很多非易失存储的管理工具，聪明的做法是避免频繁写入非易失存储</li>
+<li>另一个工具是复制：不过管理复制的多副本有些棘手</li>
+</ul>
+<h2 id="一致性（Consistency）"><a href="#一致性（Consistency）" class="headerlink" title="一致性（Consistency）"></a>一致性（Consistency）</h2><p>一致性就是用来定义操作行为的概念，在一个分布式系统中，由于复制或者缓存，数据可能存在于多个副本当中，数据需要在多个副本之间能够保持一致的特性</p>
+<p>强一致性：如果想要做到强一致性，分布式系统的各个组件需要做大量的通信</p>
+<p>弱一致性：比方说在一个k-v数据库中，弱一致性指的是可以保存get得到的是put写入的最新的数据</p>
+<h2 id="分区容错性（Partition-tolerance）"><a href="#分区容错性（Partition-tolerance）" class="headerlink" title="分区容错性（Partition tolerance）"></a>分区容错性（Partition tolerance）</h2><p>分布式系统在遇到任何网络分区故障的时候，仍然能够对外提供满足一致性和可用性的服务，除非整个网络环境都发生了故障</p>
+<h3 id="什么是分区？"><a href="#什么是分区？" class="headerlink" title="什么是分区？"></a>什么是分区？</h3><blockquote>
+<p>在分布式系统中，不同的节点分布在不同的子网络中，由于一些特殊的原因，这些子节点之间出现了网络不通的状态，但他们的内部子网络是正常的。从而导致了整个系统的环境被切分成了若干个孤立的区域，这就是分区。</p>
+</blockquote>
+<h1 id="CAP原则权衡"><a href="#CAP原则权衡" class="headerlink" title="CAP原则权衡"></a>CAP原则权衡</h1><p>我们在CAP理论中是无法同时满足CAP的，那要丢弃哪一个呢？</p>
+<h3 id="CA-without-P"><a href="#CA-without-P" class="headerlink" title="CA without P"></a>CA without P</h3><p>如果不要求分区，则可用性和一致性是可以保证的。但其实分布不是想不想的问题，而是始终会存在，因此CA的系统更多的是允许分区后各字系统依然保持CA</p>
+<h3 id="CP-without-A"><a href="#CP-without-A" class="headerlink" title="CP without A"></a>CP without A</h3><p>如果不要求可用性，相当于每个请求都要在Server之间强一致，而分区会导致同步时间无限延长，如此CP也是可以保证的。很多传统的数据库分布式事务都属于这种模式</p>
+<h3 id="AP-without-C"><a href="#AP-without-C" class="headerlink" title="AP without C"></a>AP without C</h3><p>要高可用并允许分区，则需放弃一致性，一旦分区发生，节点之间可能会失去联系，为了高可用，每个节点只能用本地数据提供服务，而这样会导致全局数据的不一致性。现在很多的NoSQL都属于这类</p>
+<h3 id="不是所谓的“3-选-2”"><a href="#不是所谓的“3-选-2”" class="headerlink" title="不是所谓的“3 选 2”"></a>不是所谓的“3 选 2”</h3><p>大部分人解释这一定律时，常常简单的表述为：“一致性、可用性、分区容忍性三者你只能同时达到其中两个，不可能同时达到”。实际上这是一个非常具有误导性质的说法，而且在 CAP 理论诞生 12 年之后，CAP 之父也在 2012 年重写了之前的论文。</p>
+<blockquote>
+<p><strong>当发生网络分区的时候，如果我们要继续服务，那么强一致性和可用性只能 2 选 1。也就是说当网络分区之后 P 是前提，决定了 P 之后才有 C 和 A 的选择。也就是说分区容错性（Partition tolerance）我们是必须要实现的。</strong></p>
+<p>简而言之就是：CAP 理论中分区容错性 P 是一定要满足的，在此基础上，只能满足可用性 A 或者一致性 C。</p>
+</blockquote>
+<p>因此，<strong>分布式系统理论上不可能选择 CA 架构，只能选择 CP 或者 AP 架构。</strong></p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>在微服务的构建中，永远都逃离不了CAP理论，因为网络永远不稳定，硬件总会老化，软件会可能出现bug，所以分区容错性在微服务中是躲不过的命题，可以这么说，只要是分布式，只要是集群都面临着AP或者CP的选择，但你很贪心的时候，既要一致性又要可用性，那只能对一致性作出一点妥协，也就是引入了BASE理论，在业务允许的情况下实现最终一致性。</p>
+]]></content>
+      <categories>
+        <category>分布式</category>
+      </categories>
+      <tags>
+        <tag>分布式</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>goRPC（1）编译码器和简易客户端服务器实现</title>
+    <url>/2021/12/30/RPC-Part1-%E7%BC%96%E8%AF%91%E7%A0%81%E5%99%A8%E5%92%8C%E7%AE%80%E6%98%93%E5%AE%A2%E6%88%B7%E7%AB%AF%E6%9C%8D%E5%8A%A1%E5%99%A8%E5%AE%9E%E7%8E%B0/</url>
+    <content><![CDATA[<h1 id="goRPC"><a href="#goRPC" class="headerlink" title="goRPC"></a>goRPC</h1><p>这次没有使用Java去实现RPC框架，虽然Java的生态很完整，有netty框架等等，但是出于接下来的6.824（lab2A写完了，确实是有难度，寒假再说）需要用go实现的原因，想要利用RPC框架提升自己go的工程能力；其次，go处理并发问题较Java更为方便，代码相对更加简洁</p>
+<span id="more"></span>
+
+<h2 id="RPC框架"><a href="#RPC框架" class="headerlink" title="RPC框架"></a>RPC框架</h2><p>RPC是一种计算机通信协议，允许调用不同进程空间的程序。</p>
+<p>不同应用程序之间的通信方式有很多，比如我们平时写crud项目经常用到的基于HTTP协议的Restful API。相比于RPC，Rest API标准统一，更通用，兼容性更好，支持不同种语言，可读性也很好。但是缺点也很多：</p>
+<ul>
+<li>Restful需要额外定义，而RPC可以直接调用</li>
+<li>基于HTTP协议的Restful报文冗余，承载了过多的无效信息，而RPC通常都是自定义的</li>
+<li>相比于Restful，RPC很灵活，更容易扩展集成，比方说负载均衡，微服务的注册中心</li>
+</ul>
+<p>在微服务和分布式系统中，客户端关心的是自己能否获取到结果，和服务端之间并不互相感知，服务端启动时将自己注册到注册中心，客户端调用时，从注册中心获取所有可用的实例，选择一个来调用。注册中心需要实现服务动态添加，删除，使用心跳确保服务处于可用状态等等</p>
+<h1 id="Part-1"><a href="#Part-1" class="headerlink" title="Part 1"></a>Part 1</h1><h3 id="消息的编码和译码"><a href="#消息的编码和译码" class="headerlink" title="消息的编码和译码"></a>消息的编码和译码</h3><p>通常客户端发送的请求包括服务名，方法名，参数三个，服务端的响应包括错误<code>error</code>，返回值<code>reply</code>两个。我们将请求和响应中的参数和返回值抽象为<code>body</code>，剩余的信息存放到<code>header</code></p>
+<h3 id="通信过程"><a href="#通信过程" class="headerlink" title="通信过程"></a>通信过程</h3><p>HTTP报文分为<code>header</code>和<code>body</code>，<code>body</code>的格式和长度通过<code>header</code>中的<code>Content-Type</code>和<code>Content-Length</code>决定，服务端通过解析<code>header</code>就能知道如何从<code>body</code>获取信息</p>
+<p>RPC报文根据HTTP报文进行设计。为了提升性能，所以会压缩长度，一般在开头会规划固定字节，来协商相关信息</p>
+<h3 id="服务端实现"><a href="#服务端实现" class="headerlink" title="服务端实现"></a>服务端实现</h3><p>关键点是三个阶段：</p>
+<ul>
+<li>readRequest</li>
+<li>handleRequest</li>
+<li>sendRequest</li>
+</ul>
+<p>代码是并发处理请求的，但是回复请求如果并发回复会导致消息错乱，所以要使用<code>lock</code></p>
+<h3 id="客户端实现"><a href="#客户端实现" class="headerlink" title="客户端实现"></a>客户端实现</h3><p>我们实现了一个消息的编译码器，并且客户端与服务端实现了简单的协议交换。同时实现了简易服务端，建立连接，读取，处理并回复客户端的请求</p>
+<p><a href="https://github.com/Chovyyyyyy/goRPC/tree/main/mainCodec">编译码器和简易客户端服务器实现的github地址</a></p>
+]]></content>
+      <categories>
+        <category>RPC</category>
+      </categories>
+      <tags>
+        <tag>RPC</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>goRPC（2）高性能客户端</title>
+    <url>/2021/12/31/RPC-Part2-%E9%AB%98%E6%80%A7%E8%83%BD%E5%AE%A2%E6%88%B7%E7%AB%AF/</url>
+    <content><![CDATA[<h1 id="高性能服务端"><a href="#高性能服务端" class="headerlink" title="高性能服务端"></a>高性能服务端</h1><h2 id="Call的设计"><a href="#Call的设计" class="headerlink" title="Call的设计"></a>Call的设计</h2><p>对<code>rpc</code>包来说，一个函数需要能够被远程调用，需要满足：</p>
+<ul>
+<li>方法导出类型</li>
+<li>方法有两个参数，都是导出类型</li>
+<li>方法第二个参数是指针</li>
+<li>方法返回类别为error</li>
+</ul>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(t *T)</span> <span class="title">MethodName</span><span class="params">(argType T1, replyType *T2)</span> <span class="title">error</span></span></span><br></pre></td></tr></table></figure>
+
+<span id="more"></span>
+
+<h2 id="实现Client"><a href="#实现Client" class="headerlink" title="实现Client"></a>实现Client</h2><p>Client字段比较复杂：</p>
+<ul>
+<li>cc：是消息的编译码器，和服务端类似，用来序列化将要发送出去的请求，以及反序列化接收到的响应</li>
+<li>sending：是一个互斥锁，和服务端类似，为了保证请求的有序发送，即防止出现多个请求报文混淆</li>
+<li>header：是每个请求的消息头，header只有在请求发送时才需要，而请求发送是互斥的，因此每个客户端只需要一个，生命在Client结构体中可以复用</li>
+<li>seq：用于给发送的请求编号，每个请求拥有唯一编号</li>
+<li>pending：存储未处理完的请求，键是编号，值是Call实例</li>
+<li>closing和shutdown任意一个值置为true，则表示Client处于不可用的状态，closing是用户关闭，shutdown一般是错误发生</li>
+</ul>
+<p>对于一个客户端来说，接收响应，发送请求是最重要的2个功能。</p>
+<p>创建连接：</p>
+<ul>
+<li>首先创建实例</li>
+<li>然后完成一开始的协议交换，发送<code>Option</code>给服务端</li>
+<li>最后在创建一个子协程调用<code>receive()</code>接收响应</li>
+</ul>
+<p>接收到的响应有三种情况：</p>
+<ul>
+<li>call 不存在，可能是请求没有发送完整，或者因为其他原因被取消，但是服务端仍然处理了</li>
+<li>call存在，但是服务端处理错误，即h.Error不为空</li>
+<li>call存在，服务端处理正常，那么需要从body中读取Reply的值</li>
+</ul>
+<p>发送请求通过客户端暴露给用户的两个RPC服务调用接口，一个同步一个异步</p>
+<p><a href="https://github.com/Chovyyyyyy/goRPC/tree/main/client">高性能客户端的github地址</a></p>
+]]></content>
+      <categories>
+        <category>RPC</category>
+      </categories>
+      <tags>
+        <tag>RPC</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>goRPC（3）注册中心实现</title>
+    <url>/2022/01/06/RPC-Part3-%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83/</url>
+    <content><![CDATA[<h2 id="将结构体映射为服务"><a href="#将结构体映射为服务" class="headerlink" title="将结构体映射为服务"></a>将结构体映射为服务</h2><p>RPC框架的一个基础能力是：像调用本地程序一样调用远程服务。对于go来说，这个问题就变成如何将结构体映射为服务</p>
+<span id="more"></span>
+
+<p>对<code>net/rpc</code>来说，一个函数需要能够被远程调用，需要满足</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(t *T)</span> <span class="title">MethodName</span><span class="params">(argType T1, replyType *T2)</span> <span class="title">error</span></span></span><br></pre></td></tr></table></figure>
+
+<p>假如客户端发送一个请求，包含Method和Argv，我们就可以用通过反射获取某个结构体的所有方法，并且通过方法，获取到该方法所有的参数类型与返回值</p>
+<h2 id="通过反射实现service"><a href="#通过反射实现service" class="headerlink" title="通过反射实现service"></a>通过反射实现service</h2><h3 id="定义结构体methodType"><a href="#定义结构体methodType" class="headerlink" title="定义结构体methodType"></a>定义结构体methodType</h3><figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="keyword">type</span> methodType <span class="keyword">struct</span> &#123;</span><br><span class="line">	method    reflect.Method</span><br><span class="line">	ArgType   reflect.Type</span><br><span class="line">	ReplyType reflect.Type</span><br><span class="line">	numCalls  <span class="keyword">uint64</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<p>每个methodType实例包含了一个方法的完整信息</p>
+<ul>
+<li>method：方法本身</li>
+<li>ArgType：第一个参数的类型</li>
+<li>ReplyType：第二个参数的类型</li>
+<li>numCalls：后续统计方法调用次数时会用到</li>
+</ul>
+<h3 id="定义结构体service"><a href="#定义结构体service" class="headerlink" title="定义结构体service"></a>定义结构体service</h3><figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="keyword">type</span> service <span class="keyword">struct</span> &#123;</span><br><span class="line">	name   <span class="keyword">string</span></span><br><span class="line">	typ    reflect.Type</span><br><span class="line">	rcvr   reflect.Value</span><br><span class="line">	method <span class="keyword">map</span>[<span class="keyword">string</span>]*methodType</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>name：映射的结构体的名称</li>
+<li>typ：结构体的类型</li>
+<li>rcvr：结构体实例本身</li>
+<li>method：存储映射的结构体的所有符合条件的方法</li>
+</ul>
+<h2 id="集成到服务端"><a href="#集成到服务端" class="headerlink" title="集成到服务端"></a>集成到服务端</h2><p>从接收到请求到回复还差以下几个步骤：</p>
+<ol>
+<li>根据入参类型，将请求的body反序列化</li>
+<li>调用<code>service.call</code>，完成方法调用</li>
+<li>将<code>reply</code>序列化为字节流，构造响应报文，返回</li>
+</ol>
+<p><a href="https://github.com/Chovyyyyyy/goRPC/tree/main/service">注册中心的github地址</a></p>
+]]></content>
+      <categories>
+        <category>RPC</category>
+      </categories>
+      <tags>
+        <tag>RPC</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>goRPC（4）超时处理</title>
+    <url>/2022/01/10/RPC-Part4-%E8%B6%85%E6%97%B6%E5%A4%84%E7%90%86/</url>
+    <content><![CDATA[<h2 id="为什么需要超时处理"><a href="#为什么需要超时处理" class="headerlink" title="为什么需要超时处理"></a>为什么需要超时处理</h2><p>超时处理是RPC框架一个比较基础的功能，如果缺失超时处理机制，无论是服务端还是客户端都容易因为网络或其他错误导致挂死，资源耗尽，这些问题的出现大大地降低了服务的可用性</p>
+<span id="more"></span>
+
+<p>在整个远程调用的过程中，需要客户端处理超时的地方：</p>
+<ul>
+<li>与服务端建立连接，导致的超时</li>
+<li>发送请求到服务端，写报文导致的超时</li>
+<li>等待服务端处理时，等待处理导致的超时（服务端宕机，迟迟不响应）</li>
+<li>从服务端接收响应时，读报文导致的超时</li>
+</ul>
+<p>需要服务端处理超时的地方：</p>
+<ul>
+<li>读取客户端请求报文时，读报文导致的超时</li>
+<li>发送响应报文时，写报文导致的超时</li>
+<li>调用映射服务的方法时，处理报文导致的超时</li>
+</ul>
+<p>goRPC在三个地方进行了超时处理，分别是：</p>
+<ol>
+<li>客户端创建连接时</li>
+<li>客户端<code>Client.Call()</code>整个过程导致的超时（包含发送报文，等待处理，接收报文所有阶段）</li>
+<li>服务端处理报文，即<code>Server.handleRequest</code>超时</li>
+</ol>
+<h2 id="创建连接超时"><a href="#创建连接超时" class="headerlink" title="创建连接超时"></a>创建连接超时</h2><figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">dialTimeout</span><span class="params">(f newClientFunc, network, address <span class="keyword">string</span>, opts ...*Option)</span> <span class="params">(client *Client, err error)</span></span> &#123;</span><br><span class="line">	opt, err := parseOptions(opts...)</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">nil</span>, err</span><br><span class="line">	&#125;</span><br><span class="line">	conn, err := net.DialTimeout(network, address, opt.ConnectTimeout)</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">nil</span>, err</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">// 如果服务端为空，关闭连接</span></span><br><span class="line">	<span class="keyword">defer</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">		<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">			_ = conn.Close()</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;()</span><br><span class="line">	ch := <span class="built_in">make</span>(<span class="keyword">chan</span> clientResult)</span><br><span class="line">	<span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">		client, err := f(conn, opt)</span><br><span class="line">		ch &lt;- clientResult&#123;client: client, err: err&#125;</span><br><span class="line">	&#125;()</span><br><span class="line">	<span class="keyword">if</span> opt.ConnectTimeout == <span class="number">0</span> &#123;</span><br><span class="line">		result := &lt;-ch</span><br><span class="line">		<span class="keyword">return</span> result.client, result.err</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">select</span> &#123;</span><br><span class="line">	<span class="keyword">case</span> &lt;-time.After(opt.ConnectTimeout):</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">nil</span>, fmt.Errorf(<span class="string">&quot;rpc client: connect timeout: expect within %s&quot;</span>, opt.ConnectTimeout)</span><br><span class="line">	<span class="keyword">case</span> result := &lt;-ch:</span><br><span class="line">		<span class="keyword">return</span> result.client, result.err</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li>这里将<code>net.Dial</code>替换为<code>net.DialTimeout</code>，如果连接创建超时，将返回错误</li>
+<li>使用子协程执行<code>NewClient</code>，执行完成后则通过信道<code>ch</code>发送结果，如果<code>time.After()</code>信道先接收到消息，说明<code>NewClient</code>执行超时，返回错误</li>
+</ol>
+<h2 id="服务端处理超时"><a href="#服务端处理超时" class="headerlink" title="服务端处理超时"></a>服务端处理超时</h2><figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(server *Server)</span> <span class="title">handleRequest</span><span class="params">(cc codec.Codec, req *request, sending *sync.Mutex, wg *sync.WaitGroup, timeout time.Duration)</span></span> &#123;</span><br><span class="line">	<span class="keyword">defer</span> wg.Done()</span><br><span class="line">	called := <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="keyword">struct</span>&#123;&#125;)</span><br><span class="line">	sent := <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="keyword">struct</span>&#123;&#125;)</span><br><span class="line">	<span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">		err := req.svc.call(req.mtype, req.argv, req.replyv)</span><br><span class="line">		called &lt;- <span class="keyword">struct</span>&#123;&#125;&#123;&#125;</span><br><span class="line">		<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">			req.h.Error = err.Error()</span><br><span class="line">			server.sendResponse(cc, req.h, invalidRequest, sending)</span><br><span class="line">			sent &lt;- <span class="keyword">struct</span>&#123;&#125;&#123;&#125;</span><br><span class="line">			<span class="keyword">return</span></span><br><span class="line">		&#125;</span><br><span class="line">		server.sendResponse(cc, req.h, req.replyv.Interface(), sending)</span><br><span class="line">		sent &lt;- <span class="keyword">struct</span>&#123;&#125;&#123;&#125;</span><br><span class="line">	&#125;()</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> timeout == <span class="number">0</span> &#123;</span><br><span class="line">		&lt;-called</span><br><span class="line">		&lt;-sent</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">select</span> &#123;</span><br><span class="line">	<span class="keyword">case</span> &lt;-time.After(timeout):</span><br><span class="line">		req.h.Error = fmt.Sprintf(<span class="string">&quot;rpc server: request handle timeout: expect within %s&quot;</span>, timeout)</span><br><span class="line">		server.sendResponse(cc, req.h, invalidRequest, sending)</span><br><span class="line">	<span class="keyword">case</span> &lt;-called:</span><br><span class="line">		&lt;-sent</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>类似于客户端的实现方式，这里需要确保<code>sendResponse</code>仅调用一次，因此将整个过程拆分为<code>called</code>和<code>sent</code>两个阶段：</p>
+<ol>
+<li>called信道接收到消息，代表处理没有超时，继续执行<code>sendResponse</code></li>
+<li><code>time.After()</code>先于called接收到消息，说明处理超时，called和sent都将被阻塞。在<code>case&lt;-time.After(timeout)</code>处调用<code>sendResponse</code></li>
+</ol>
+<p><a href="https://github.com/Chovyyyyyy/goRPC/tree/main/timeout">超时处理的github地址</a></p>
+]]></content>
+      <categories>
+        <category>RPC</category>
+      </categories>
+      <tags>
+        <tag>RPC</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>goRPC（5）支持HTTP</title>
+    <url>/2022/01/16/RPC-Part5-%E6%94%AF%E6%8C%81HTTP/</url>
+    <content><![CDATA[<h2 id="为什么要支持HTTP协议"><a href="#为什么要支持HTTP协议" class="headerlink" title="为什么要支持HTTP协议"></a>为什么要支持HTTP协议</h2><p>在我们平时做项目时，经常会使用HTTP协议中的HEAD，GET，POST等方式来发送请求，等待响应。但RPC的消息格式和标准的HTTP协议并不兼容，这就需要一个协议的转换过程。HTTP协议的CONNECT方法恰好提供了这个功能，CONNECT一般用于代理服务</p>
+<span id="more"></span>
+
+<p><strong>假设浏览器和服务器之间的HTTPS通信都是加密的，浏览器通过代理服务器发起HTTPS请求时，由于请求的站点地址和端口号都是加密保存在HTTPS请求报文头中的，代理服务器如何知道往哪里发送请求呢？</strong></p>
+<p>为了解决这个问题，浏览器通过HTTP明文形式向代理服务器发送一个CONNECT请求告诉代理服务器目标地址和端口，代理服务器接收到这个请求后，会在对应端口与目标站点建立一个TCP连接，连接建立成功后返回HTTP 200 状态码告诉浏览器与该站点的加密通道已经完成。接下来代理服务器仅需要通过传递浏览器和服务器之间的加密数据报即可，代理服务器无需解析HTTPS请求报文</p>
+<p>举一个简单例子：</p>
+<ol>
+<li>浏览器向代理服务器发送 CONNECT 请求。</li>
+</ol>
+<figure class="highlight http"><table><tr><td class="code"><pre><span class="line"><span class="keyword">CONNECT</span> <span class="string">lehends.com:443</span> <span class="meta">HTTP/1.0</span></span><br></pre></td></tr></table></figure>
+
+<ol>
+<li>代理服务器返回 HTTP 200 状态码表示连接已经建立。</li>
+</ol>
+<figure class="highlight apache"><table><tr><td class="code"><pre><span class="line"><span class="attribute">HTTP</span>/<span class="number">1</span>.<span class="number">0</span> <span class="number">200</span> Connection Established</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li>之后浏览器和服务器开始 HTTPS 握手并交换加密数据，代理服务器只负责传输彼此的数据包，并不能读取具体数据内容（代理服务器也可以选择安装可信根证书解密 HTTPS 报文）。</li>
+</ol>
+<p>事实上，这个过程其实是通过代理服务器将 HTTP 协议转换为 HTTPS 协议的过程。对 RPC 服务端来，需要做的是将 HTTP 协议转换为 RPC 协议，对客户端来说，需要新增通过 HTTP CONNECT 请求创建连接的逻辑。</p>
+<h2 id="服务端支持HTTP协议"><a href="#服务端支持HTTP协议" class="headerlink" title="服务端支持HTTP协议"></a>服务端支持HTTP协议</h2><p>那通信过程应该是这样的：</p>
+<ol>
+<li>客户端向 RPC 服务器发送 CONNECT 请求</li>
+</ol>
+<figure class="highlight http"><table><tr><td class="code"><pre><span class="line"><span class="keyword">CONNECT</span> <span class="string">10.0.0.1:9999/_goRPC_</span> <span class="meta">HTTP/1.0</span></span><br></pre></td></tr></table></figure>
+
+<ol>
+<li>RPC 服务器返回 HTTP 200 状态码表示连接建立。</li>
+</ol>
+<figure class="highlight apache"><table><tr><td class="code"><pre><span class="line"><span class="attribute">HTTP</span>/<span class="number">1</span>.<span class="number">0</span> <span class="number">200</span> Connected to goRPC</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li>客户端使用创建好的连接发送 RPC 报文，先发送 Option，再发送 N 个请求报文，服务端处理 RPC 请求并响应。</li>
+</ol>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="comment">// ServeHTTP 继承一个 httpDebug.Handler 作为RPC请求</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(server *Server)</span> <span class="title">ServeHTTP</span><span class="params">(w http.ResponseWriter, req *http.Request)</span></span>  &#123;</span><br><span class="line">	<span class="keyword">if</span> req.Method != <span class="string">&quot;CONNECT&quot;</span> &#123;</span><br><span class="line">		w.Header().Set(<span class="string">&quot;Content-Type&quot;</span>,<span class="string">&quot;text/plain; charset=utf-8&quot;</span>)</span><br><span class="line">		w.WriteHeader(http.StatusMethodNotAllowed)</span><br><span class="line">		_,_ = io.WriteString(w,<span class="string">&quot;405  must CONNECT\n&quot;</span>)</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line">	conn, _, err := w.(http.Hijacker).Hijack()</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		log.Print(<span class="string">&quot;rpc hijacking &quot;</span>, req.RemoteAddr, <span class="string">&quot;: &quot;</span>,err.Error())</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line">	_, _ = io.WriteString(conn,<span class="string">&quot;HTTP/1.0 &quot;</span>+connected+<span class="string">&quot;\n\n&quot;</span>)</span><br><span class="line">	server.ServeConn(conn)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="客户端支持HTTP协议"><a href="#客户端支持HTTP协议" class="headerlink" title="客户端支持HTTP协议"></a>客户端支持HTTP协议</h2><p>服务端已经能够接收CONNECT请求，并返回了200状态码<code>HTTP/1.0 200 Connected to goRPC</code>，客户端要做的，发起CONNECT请求，检查返回状态码即可成功建立连接</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="comment">// NewHTTPClient 通过 HTTP 作为传输协议新建一个客户端实例</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">NewHTTPClient</span><span class="params">(conn net.Conn, opt *Option)</span> <span class="params">(*Client, error)</span></span> &#123;</span><br><span class="line">	_, _ = io.WriteString(conn, fmt.Sprintf(<span class="string">&quot;CONNECT %s HTTP/1.0\n\n&quot;</span>, defaultRPCPath))</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 在切换到 RPC 协议之前需要成功的 HTTP 响应</span></span><br><span class="line">	resp, err := http.ReadResponse(bufio.NewReader(conn), &amp;http.Request&#123;Method: <span class="string">&quot;CONNECT&quot;</span>&#125;)</span><br><span class="line">	<span class="keyword">if</span> err == <span class="literal">nil</span> &amp;&amp; resp.Status == connected &#123;</span><br><span class="line">		<span class="keyword">return</span> NewClient(conn, opt)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> err == <span class="literal">nil</span> &#123;</span><br><span class="line">		err = errors.New(<span class="string">&quot;unexpected HTTP response: &quot;</span> + resp.Status)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> <span class="literal">nil</span>, err</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><a href="https://github.com/Chovyyyyyy/goRPC/tree/main/httpDebug">支持http的github地址</a></p>
+]]></content>
+      <categories>
+        <category>RPC</category>
+      </categories>
+      <tags>
+        <tag>RPC</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>goRPC（6）负载均衡</title>
+    <url>/2022/01/16/RPC-Part6-%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/</url>
+    <content><![CDATA[<p>在分布式系统中，负载均衡是一个常见提高负载能力的方法</p>
+<h2 id="负载均衡策略"><a href="#负载均衡策略" class="headerlink" title="负载均衡策略"></a>负载均衡策略</h2><ul>
+<li>随机选择策略：从服务列表中随机选择一个</li>
+<li>轮询算法（Round Robin）：依次调度不同的服务器，每次调度执行i = （i+1）mode n</li>
+<li>加权轮询（Weight Round Robin）：在轮询算法的基础上，为每个服务实例设置一个权重，高性能的机器赋予更好的权重，也可以根据服务实例的当前的负载情况做动态的调整</li>
+<li>hash一致：根据请求计算一个hash值，根据hash值将请求发送到对应的机器</li>
+</ul>
+<span id="more"></span>
+
+<h2 id="服务发现"><a href="#服务发现" class="headerlink" title="服务发现"></a>服务发现</h2><p>负载均衡的前提是有多个服务实例，我们首先要实现一个最简单的服务发现模块Discovery</p>
+<p>定义 2 个类型：</p>
+<ul>
+<li>SelectMode 代表不同的负载均衡策略，简单起见，goRPC 仅实现 Random 和 RoundRobin 两种策略。</li>
+<li>Discovery 是一个接口类型，包含了服务发现所需要的最基本的接口。<ul>
+<li>Refresh() 从注册中心更新服务列表</li>
+<li>Update(servers []string) 手动更新服务列表</li>
+<li>Get(mode SelectMode) 根据负载均衡策略，选择一个服务实例</li>
+<li>GetAll() 返回所有的服务实例</li>
+</ul>
+</li>
+</ul>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="keyword">var</span> _ Discovery = (*MultiServersDiscovery)(<span class="literal">nil</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment">// Refresh 刷新对多服务器发现无效，可以忽略</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(d *MultiServersDiscovery)</span> <span class="title">Refresh</span><span class="params">()</span> <span class="title">error</span></span> &#123;</span><br><span class="line">	<span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Update 需要时，动态更新发现的服务器</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(d *MultiServersDiscovery)</span> <span class="title">Update</span><span class="params">(servers []<span class="keyword">string</span>)</span> <span class="title">error</span></span> &#123;</span><br><span class="line">	d.mu.Lock()</span><br><span class="line">	<span class="keyword">defer</span> d.mu.Unlock()</span><br><span class="line">	d.servers = servers</span><br><span class="line">	<span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Get 根据模式获取一个服务器</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(d *MultiServersDiscovery)</span> <span class="title">Get</span><span class="params">(mode SelectMode)</span> <span class="params">(<span class="keyword">string</span>, error)</span></span> &#123;</span><br><span class="line">	d.mu.Lock()</span><br><span class="line">	<span class="keyword">defer</span> d.mu.Unlock()</span><br><span class="line">	n := <span class="built_in">len</span>(d.servers)</span><br><span class="line">	<span class="keyword">if</span> n == <span class="number">0</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="string">&quot;&quot;</span>, errors.New(<span class="string">&quot;rpc discovery: no available servers&quot;</span>)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">switch</span> mode &#123;</span><br><span class="line">	<span class="keyword">case</span> RandomSelect:</span><br><span class="line">		<span class="keyword">return</span> d.servers[d.r.Intn(n)], <span class="literal">nil</span></span><br><span class="line">	<span class="keyword">case</span> RoundRobinSelect:</span><br><span class="line">		s := d.servers[d.index%n] <span class="comment">// 服务器可以更新，所以模式n确保安全</span></span><br><span class="line">		d.index = (d.index + <span class="number">1</span>) % n</span><br><span class="line">		<span class="keyword">return</span> s, <span class="literal">nil</span></span><br><span class="line">	<span class="keyword">default</span>:</span><br><span class="line">		<span class="keyword">return</span> <span class="string">&quot;&quot;</span>, errors.New(<span class="string">&quot;rpc discovery: not supported select mode&quot;</span>)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// GetAll 返回发现的所有服务器</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(d *MultiServersDiscovery)</span> <span class="title">GetAll</span><span class="params">()</span> <span class="params">([]<span class="keyword">string</span>, error)</span></span> &#123;</span><br><span class="line">	d.mu.RLock()</span><br><span class="line">	<span class="keyword">defer</span> d.mu.RUnlock()</span><br><span class="line">	<span class="comment">// 返回一个服务器复制版</span></span><br><span class="line">	servers := <span class="built_in">make</span>([]<span class="keyword">string</span>, <span class="built_in">len</span>(d.servers), <span class="built_in">len</span>(d.servers))</span><br><span class="line">	<span class="built_in">copy</span>(servers, d.servers)</span><br><span class="line">	<span class="keyword">return</span> servers, <span class="literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="支持负载均衡的客户端XClient"><a href="#支持负载均衡的客户端XClient" class="headerlink" title="支持负载均衡的客户端XClient"></a>支持负载均衡的客户端XClient</h2><figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">NewXClient</span><span class="params">(d Discovery, mode SelectMode, opt *Option)</span> *<span class="title">XClient</span></span> &#123;</span><br><span class="line">	<span class="keyword">return</span> &amp;XClient&#123;d: d, mode: mode, opt: opt, clients: <span class="built_in">make</span>(<span class="keyword">map</span>[<span class="keyword">string</span>]*Client)&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(xc *XClient)</span> <span class="title">Close</span><span class="params">()</span> <span class="title">error</span></span> &#123;</span><br><span class="line">	xc.mu.Lock()</span><br><span class="line">	<span class="keyword">defer</span> xc.mu.Unlock()</span><br><span class="line">	<span class="keyword">for</span> key, client := <span class="keyword">range</span> xc.clients &#123;</span><br><span class="line">		_ = client.Close()</span><br><span class="line">		<span class="built_in">delete</span>(xc.clients, key)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><a href="https://github.com/Chovyyyyyy/goRPC/tree/main/loadBalance">负载均衡的github地址</a></p>
+]]></content>
+      <categories>
+        <category>RPC</category>
+      </categories>
+      <tags>
+        <tag>RPC</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>goRPC（7）服务发现与注册中心</title>
+    <url>/2022/01/16/RPC-Part7-%E6%9C%8D%E5%8A%A1%E5%8F%91%E7%8E%B0%E4%B8%8E%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83/</url>
+    <content><![CDATA[<h2 id="注册中心的位置"><a href="#注册中心的位置" class="headerlink" title="注册中心的位置"></a>注册中心的位置</h2><p><img src="https://cdn.jsdelivr.net/gh/Chovyyyyyy/blogPhoto/Lehends/202201161112433.jpg"></p>
+<p>注册中心的好处在于，客户端与服务端都只需要感知注册中心的存在，而无需感知对方的存在：</p>
+<ol>
+<li>服务端启动后，向注册中心发送注册消息，注册中心得知该服务已经启动，处于可用状态。一般来说，服务端还需要定期向注册中心发送心跳。服务端还需要向注册中心发送心跳，证明在活着</li>
+<li>客户端向注册中心询问，当前哪个服务是可用的，注册中心将可用的服务列表返回客户端</li>
+<li>客户端根据注册中心得到的服务列表，选择其中一个发起调用</li>
+</ol>
+<p>常用的注册中心有etcd，zookeeper，consul</p>
+<span id="more"></span>
+
+<h2 id="go-Registry"><a href="#go-Registry" class="headerlink" title="go Registry"></a>go Registry</h2><p>goRegistry添加服务实例和返回服务列表的方法</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="comment">// putServer 添加服务实例，如果服务已经存在，则更新start</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(r *GoRegistry)</span> <span class="title">putServer</span><span class="params">(addr <span class="keyword">string</span>)</span></span> &#123;</span><br><span class="line">	r.mu.Lock()</span><br><span class="line">	<span class="keyword">defer</span> r.mu.Unlock()</span><br><span class="line">	s := r.servers[addr]</span><br><span class="line">	<span class="keyword">if</span> s == <span class="literal">nil</span> &#123;</span><br><span class="line">		r.servers[addr] = &amp;ServerItem&#123;</span><br><span class="line">			Addr:  addr,</span><br><span class="line">			start: time.Now(),</span><br><span class="line">		&#125;</span><br><span class="line">	&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">		<span class="comment">//如果存在，更新时间来保持存活</span></span><br><span class="line">		s.start = time.Now()</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="comment">// aliveServers 返回可用的服务列表，如果存在超时服务，则删除</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(r *GoRegistry)</span> <span class="title">aliveServers</span><span class="params">()</span> []<span class="title">string</span></span> &#123;</span><br><span class="line">	r.mu.Lock()</span><br><span class="line">	<span class="keyword">defer</span> r.mu.Unlock()</span><br><span class="line">	<span class="keyword">var</span> alive []<span class="keyword">string</span></span><br><span class="line">	<span class="keyword">for</span> addr, s := <span class="keyword">range</span> r.servers &#123;</span><br><span class="line">		<span class="keyword">if</span> r.timeout == <span class="number">0</span> || s.start.Add(r.timeout).After(time.Now()) &#123;</span><br><span class="line">			alive = <span class="built_in">append</span>(alive, addr)</span><br><span class="line">		&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">			<span class="built_in">delete</span>(r.servers, addr)</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	sort.Strings(alive)</span><br><span class="line">	<span class="keyword">return</span> alive</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="goRegistryDiscovery"><a href="#goRegistryDiscovery" class="headerlink" title="goRegistryDiscovery"></a>goRegistryDiscovery</h2><p>主要实现Update和Refresh方法，超时重新获取的逻辑在Refresh中实现：</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(d *GeeRegistryDiscovery)</span> <span class="title">Update</span><span class="params">(servers []<span class="keyword">string</span>)</span> <span class="title">error</span></span> &#123;</span><br><span class="line">	d.mu.Lock()</span><br><span class="line">	<span class="keyword">defer</span> d.mu.Unlock()</span><br><span class="line">	d.servers = servers</span><br><span class="line">	d.lastUpdate = time.Now()</span><br><span class="line">	<span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(d *GeeRegistryDiscovery)</span> <span class="title">Refresh</span><span class="params">()</span> <span class="title">error</span></span> &#123;</span><br><span class="line">	d.mu.Lock()</span><br><span class="line">	<span class="keyword">defer</span> d.mu.Unlock()</span><br><span class="line">	<span class="keyword">if</span> d.lastUpdate.Add(d.timeout).After(time.Now()) &#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">	&#125;</span><br><span class="line">	log.Println(<span class="string">&quot;rpc registry: refresh servers from registry&quot;</span>, d.registry)</span><br><span class="line">	resp, err := http.Get(d.registry)</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		log.Println(<span class="string">&quot;rpc registry refresh err:&quot;</span>, err)</span><br><span class="line">		<span class="keyword">return</span> err</span><br><span class="line">	&#125;</span><br><span class="line">	servers := strings.Split(resp.Header.Get(<span class="string">&quot;X-Geerpc-Servers&quot;</span>), <span class="string">&quot;,&quot;</span>)</span><br><span class="line">	d.servers = <span class="built_in">make</span>([]<span class="keyword">string</span>, <span class="number">0</span>, <span class="built_in">len</span>(servers))</span><br><span class="line">	<span class="keyword">for</span> _, server := <span class="keyword">range</span> servers &#123;</span><br><span class="line">		<span class="keyword">if</span> strings.TrimSpace(server) != <span class="string">&quot;&quot;</span> &#123;</span><br><span class="line">			d.servers = <span class="built_in">append</span>(d.servers, strings.TrimSpace(server))</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	d.lastUpdate = time.Now()</span><br><span class="line">	<span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><a href="https://github.com/Chovyyyyyy/goRPC/tree/main/registry">服务发现与注册中心的github地址</a></p>
+]]></content>
+      <categories>
+        <category>RPC</category>
+      </categories>
+      <tags>
+        <tag>RPC</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>kvRaft实现</title>
+    <url>/2022/02/07/kvRaft%E5%AE%9E%E7%8E%B0/</url>
+    <content><![CDATA[<h2 id="Part-A-Key-value-service-without-snapshots"><a href="#Part-A-Key-value-service-without-snapshots" class="headerlink" title="Part A: Key/value service without snapshots"></a>Part A: Key/value service without snapshots</h2><p>本实验要求你使用lab 2中的Raft库构建一个容错的Key/Value服务。你的Key/Value服务应该是由几个使用Raft来维护复制的key/value服务器组成的一个复制状态机。尽管存在一些其他故障或网络分区，但只要大多数服务器还活着并可以通信，你的key/value服务就应该继续处理客户端请求。<br>但客户端如何与Raft进行交互呢？正如<a href="https://thesquareplanet.com/blog/students-guide-to-raft/#applications-on-top-of-raft">Raft学生指南的“在Raft之上的应用”</a>一节所述：</p>
+<blockquote>
+<p>你可能对你甚至将如何根据一个复制的日志实现一个应用程序感到困惑……服务应该被构造为一个<strong>状态机</strong>，其中客户端操作将机器从一个状态转换到另一个状态。</p>
+</blockquote>
+<p>你的服务应该支持<code>Put(key, value)</code>，<code>Append(key, arg)</code>和<code>Get(key)</code>这些操作。每个客户端通过<code>Clerk</code>的<code>Put/Append/Get</code>方法与服务通信。<code>Clerk</code>管理与服务器的RPC交互。你的服务应该为调用<code>Clerk</code>的<code>Get/Put/Append</code>方法的应用程序提供<strong>强一致性</strong>。</p>
+<blockquote>
+<p>你的每个key/value服务器都将有一个关联的Raft对等点(peer)。Clerks将<code>Put()</code>，<code>Append()</code>和<code>Get()</code>RPCs发送到其关联的Raft是领导者的kvserver。kvserver的代码将<code>Put/Append/Get</code>操作提交给Raft，以便Raft日志保存一个<code>Put/Append/Get</code>操作的序列。<strong>所有的kvserver</strong>都按顺序从Raft日志中执行操作，将这些操作应用到它们的key/value数据库；目的是让这些服务器维护key/value数据库的相同副本。<br>Clerk有时不知道哪个kvserver是Raft的领导者。如果Clerk将一个RPC发送到错误的kvserver，或者它无法到达kvserver，Clerk应该通过发送到一个不同的kvserver来重试。如果key/value服务器将操作提交到它的Raft日志(并因此将该操作应用到key/value状态机)，则领导者通过响应其RPC将结果报告给Clerk。如果操作未能提交(例如，如果领导者被替换)，服务器报告一个错误，并且Clerk用一个不同的服务器重试。</p>
+</blockquote>
+<p>在这里我们只以一个PutAppend操作作为示例</p>
+<h3 id="Client"><a href="#Client" class="headerlink" title="Client"></a>Client</h3><figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(ck *Clerk)</span> <span class="title">PutAppend</span><span class="params">(key <span class="keyword">string</span>, value <span class="keyword">string</span>, opreation <span class="keyword">string</span>)</span></span> &#123;</span><br><span class="line">	<span class="comment">// 线性一致性</span></span><br><span class="line">	ck.requestId++</span><br><span class="line">	requestId := ck.requestId</span><br><span class="line">	server := ck.recentLeaderId</span><br><span class="line">	<span class="keyword">for</span> &#123;</span><br><span class="line">		args := PutAppendArgs&#123;Key: key, Value: value, Opreation : opreation, ClientId: ck.clientId,  RequestId: requestId&#125;</span><br><span class="line">		reply := PutAppendReply&#123;&#125;</span><br><span class="line">		ok := ck.servers[server].Call(<span class="string">&quot;KVServer.PutAppend&quot;</span>, &amp;args, &amp;reply)</span><br><span class="line">		<span class="comment">// 判断请求是否成功以及raft节点是否是leader</span></span><br><span class="line">		<span class="keyword">if</span> !ok || reply.Err == ErrWrongLeader&#123;</span><br><span class="line">			server = (server+<span class="number">1</span>)%<span class="built_in">len</span>(ck.servers)</span><br><span class="line">			<span class="comment">//time.Sleep(100 * time.Millisecond)</span></span><br><span class="line">			<span class="keyword">continue</span></span><br><span class="line">		&#125;</span><br><span class="line">		<span class="comment">// 如果reply是OK则更新recentLeaderId</span></span><br><span class="line">		<span class="keyword">if</span> reply.Err == OK &#123;</span><br><span class="line">			ck.recentLeaderId = server</span><br><span class="line">			<span class="keyword">return</span></span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="Server"><a href="#Server" class="headerlink" title="Server"></a>Server</h3><figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(kv *KVServer)</span> <span class="title">PutAppend</span><span class="params">(args *PutAppendArgs, reply *PutAppendReply)</span></span> &#123;</span><br><span class="line">   <span class="keyword">if</span> kv.killed() &#123;</span><br><span class="line">      reply.Err = ErrWrongLeader</span><br><span class="line">      <span class="keyword">return</span></span><br><span class="line">   &#125;</span><br><span class="line"></span><br><span class="line">   _, ifLeader := kv.rf.GetState()</span><br><span class="line">   <span class="keyword">if</span> !ifLeader &#123;</span><br><span class="line">      reply.Err = ErrWrongLeader</span><br><span class="line">      <span class="keyword">return</span></span><br><span class="line">   &#125;</span><br><span class="line"></span><br><span class="line">   op := Op&#123;Operation: args.Opreation, Key: args.Key, Value: args.Value, ClientId: args.ClientId, RequestId: args.RequestId&#125;</span><br><span class="line"></span><br><span class="line">   raftIndex, _, _ := kv.rf.Start(op)</span><br><span class="line">   <span class="comment">// 创建 waitApplyChannel</span></span><br><span class="line">   kv.mu.Lock()</span><br><span class="line">   chForRaftIndex, exist := kv.waitApplyCh[raftIndex]</span><br><span class="line">   <span class="keyword">if</span> !exist &#123;</span><br><span class="line">      kv.waitApplyCh[raftIndex] = <span class="built_in">make</span>(<span class="keyword">chan</span> Op, <span class="number">1</span>)</span><br><span class="line">      chForRaftIndex = kv.waitApplyCh[raftIndex]</span><br><span class="line">   &#125;</span><br><span class="line">   kv.mu.Unlock()</span><br><span class="line"></span><br><span class="line">   <span class="keyword">select</span> &#123;</span><br><span class="line">      <span class="keyword">case</span> &lt;- time.After(time.Millisecond*CONSENSUS_TIMEOUT) :</span><br><span class="line">         <span class="keyword">if</span> kv.isRequestDuplicate(op.ClientId,op.RequestId)&#123;</span><br><span class="line">            reply.Err = OK</span><br><span class="line">         &#125; <span class="keyword">else</span>&#123;</span><br><span class="line">            reply.Err = ErrWrongLeader</span><br><span class="line">         &#125;</span><br><span class="line"></span><br><span class="line">      <span class="keyword">case</span> raftCommitOp := &lt;- chForRaftIndex :</span><br><span class="line">         <span class="keyword">if</span> raftCommitOp.ClientId == op.ClientId &amp;&amp; raftCommitOp.RequestId == op.RequestId  &#123;</span><br><span class="line">            reply.Err = OK</span><br><span class="line">         &#125;<span class="keyword">else</span>&#123;</span><br><span class="line">            reply.Err = ErrWrongLeader</span><br><span class="line">         &#125;</span><br><span class="line"></span><br><span class="line">   &#125;</span><br><span class="line">   kv.mu.Lock()</span><br><span class="line">   <span class="built_in">delete</span>(kv.waitApplyCh,raftIndex)</span><br><span class="line">   kv.mu.Unlock()</span><br><span class="line">   <span class="keyword">return</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="客户端请求重复检测"><a href="#客户端请求重复检测" class="headerlink" title="客户端请求重复检测"></a>客户端请求重复检测</h3><p>正如开头提到的，你的服务必须为调用Clerk的<code>Get/Put/Append</code>方法的应用程序提供<strong>强一致性</strong>。这里是强一致性的定义：</p>
+<blockquote>
+<p>如果一次调用一个，则<code>Get/Put/Append</code>方法应该像只有一个状态副本的系统那样执行，并且每个调用都应该观察到之前调用的序列隐含的对状态的修改。对于并发调用，返回值和最终状态必须像操作以某种顺序一次执行一个操作那样。如果调用在时间上重叠，它就是并发的，比如如果客户端X调用<code>Clerk.Put()</code>，然后客户端Y调用<code>Clerk.Append()</code>，然后客户端X的调用返回。此外，一次调用必须观察到在本次调用开始前已经完成的所有调用的结果(所以我们技术上要求线性一致性)。</p>
+</blockquote>
+<p>正如<a href="https://pdos.csail.mit.edu/6.824/papers/raft-extended.pdf">raft-extended论文的“第8节 客户端交互”</a>所说：</p>
+<blockquote>
+<p>Raft的目标是实现线性一致性语义(每个操作似乎是瞬时完成的，恰好一次，在其调用和响应之间的某个点)。但是，目前描述的Raft可以执行一个命令多次：例如，如果领导者在提交日志条目之后但响应客户端之前崩溃了，客户端将向新的领导者重试该命令，造成它被第二次执行。</p>
+</blockquote>
+<p>因此，为了实现线性一致性，需要某种重复检测方案——如果一个客户端向你的服务器发送一个APPEND，没有听到回复，并将其重新发送到下一个服务器，则你的apply()函数要确保该APPEND不会被执行两次。<br>我们的重复检测方案是：</p>
+<ol>
+<li>每个客户端都需要一个唯一的客户端ID——可能是一个64位的随机数</li>
+<li>每个客户端为每个请求选择一个序列号seq ，在RPC中发送。在相同的RPC的重新发送中使用相同的seq 。</li>
+<li>客户端在每个RPC中发送客户端ID和seq ，如果它重新发送，则重复seq </li>
+<li>k/v服务负责检测重复客户端请求，为此维护由客户端ID索引的表。我们想要保持该重复表小一点，因此每个客户端一个表条目，而不是每个RPC一个。每个表条目只包含seq，和如果已经执行则包含值。</li>
+<li>RPC处理程序首先检查重复表，只有当seq大于重复表中该客户端的表条目中的seq时才调用<code>Start()</code>。</li>
+<li>每个日志条目(log entry)必须包含客户端ID，seq #。当操作(由日志条目转化为applyMsg再转换为Op)出现在applyCh上时，更新该客户端的table entry中的seq #和值，唤醒等待的RPC处理程序(RPC handler)(如果有的话)。</li>
+<li><strong>每个客户端一次仅有一个未处理的RPC</strong>。</li>
+<li>当服务器收到客户端的#10 RPC时，它可以忘记客户端的较低的条目，<strong>因为这意味着客户端从不会重新发送较旧的RPC</strong>。</li>
+</ol>
+<p>这里面有一个重要的隐含条件：单个客户端的请求是顺序的，也就是说每个客户端都是在上一个请求返回之后，再执行下一个请求的，同一个客户端的请求都是顺序的，不存在并发。正如<a href="https://pdos.csail.mit.edu/6.824/labs/lab-kvraft.html">Lab 3：容错的Key/Value服务的“Part 3A：没有日志压缩的Key/Value服务”</a>中的提示所述：</p>
+<blockquote>
+<p>可以假设一个客户端一次将只对Clerk做一次调用。</p>
+</blockquote>
+<p>为了去重处理，正如<a href="https://thesquareplanet.com/blog/students-guide-to-raft/#duplicate-detection">Raft学生指南的“重复检测”</a>一节所说的：</p>
+<blockquote>
+<p>对于每个客户端请求，你需要某种唯一的标识符……有许多方法可以分配这样的标识符。一种简单并且相当有效的方法是给每个客户端一个唯一的标识符，然后让它们用一个单调递增的序列号标记(tag)每个请求。如果一个客户端重新发送一个请求，则它重用相同的序列号。</p>
+</blockquote>
+<p>你的服务应该维护一个以client ID作为索引的map，其中的每个条目对应只含有seq number和如果已经执行的请求的结果值。这个去重map应该称为你的状态机的一部分，所有的副本在它们执行时都应该更新自己的去重map，这样如果它们称为leader，信息已经在那里了。</p>
+<h3 id="客户端超时重试"><a href="#客户端超时重试" class="headerlink" title="客户端超时重试"></a>客户端超时重试</h3><p>客户端需要重试重试机制，这时因为：我们的服务完全是依靠<code>applyCh</code>上出现的<code>applyMsg</code>驱动的，如果某peer作为original leader接收了客户端的请求，但在将请求提交之前失去了领导地位，那么该请求就不会出现在applyCh上，接收该请求的RPC handler一直处于等待状态。又因为线性一致性语义假设一个客户端一次只对Clerk进行一次调用，也就是说本次请求没有得到响应前，不会发起新的请求，这就出现了死锁：kvserver等待客户端发起新的请求，其被提交后出现在applyCh上，以便可以唤醒等待的RPC handler；而RPC handler处于等待状态，无法回复客户端请求，本次客户端请求没有得到响应，无法发起新的请求，整个服务陷入死锁。解决方案有两种：</p>
+<ol>
+<li>RPC handler本身加入检测leader是否被替换的功能，即我们之前实现的<code>detectDeposed goroutine</code>，其周期性地调用<code>rf.GetState()</code>，判断是否不再是leader或者任期发生变化，从而检测leader是否被替换。</li>
+<li>客户端请求加入超时重试机制，超时后主动进行重试。</li>
+</ol>
+<p>发生客户端超时重试时，上次的客户端请求被认为是失败的，再次发起重试。<br>实现客户端超时重试需要两个步骤：</p>
+<ol>
+<li>将目前Clerk同步的RPC调用通过goroutine改为异步，通过一个<code>replyCh</code>可以得到RPC调用的执行结果。</li>
+<li>Clerk发送程序同时监听<code>replyCh</code>和<code>timeoutCh</code>两个事件，如果得到kvserver的请求执行结果则成功返回到客户端；如果执行出错或者超时，则进行重试。</li>
+</ol>
+<h2 id="Part-B-Key-value-service-with-snapshots"><a href="#Part-B-Key-value-service-with-snapshots" class="headerlink" title="Part B: Key/value service with snapshots"></a>Part B: Key/value service with snapshots</h2><p>这里的实现和lab2类似</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">测试人员将maxraftstate传递给您的 StartKVServer()。</span><br><span class="line">maxraftstate表示持久 Raft 状态的最大允许大小（以字节为单位）（包括日志，但不包括快照）。</span><br><span class="line">您应该将maxraftstate与persister.RaftStateSize()进行比较。</span><br><span class="line">每当您的键/值服务器检测到 Raft 状态大小接近此阈值时，它应该使用Snapshot保存快照</span><br><span class="line">，而后者又使用persister.SaveRaftState()。如果maxraftstate为 -1，则不必进行快照。</span><br><span class="line">maxraftstate适用于 Raft 传递给persister.SaveRaftState()的 GOB 编码字节。</span><br></pre></td></tr></table></figure>]]></content>
+      <categories>
+        <category>基于raft实现分布式KV</category>
+      </categories>
+      <tags>
+        <tag>基于raft实现分布式KV</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>shardKv</title>
+    <url>/2022/02/07/shardKv/</url>
+    <content><![CDATA[<h2 id="lab4A"><a href="#lab4A" class="headerlink" title="lab4A"></a>lab4A</h2><p>这里要我们实现集群配置管理服务的部分。首先我们先理解几个操作的含义：</p>
+<ul>
+<li>Join：新加入的Group信息</li>
+<li>Leave：哪些Group要离开</li>
+<li>Move：将Shard分配给GID的Group，无论它原来在哪</li>
+<li>Query：查询最新的Config信息</li>
+</ul>
+<p>其实，这里就能看出来，它非常像我们实现过的Lab3. Join, Leave, Move其实就是PutAppend, Query就是Get. 因此，我们只需要在Lab3的代码逻辑上修改就可以了。主要修改的就是：替换几大操作，在Join, Leave之后，需要根据分片分布情况进行负载均衡（reBalance).其实就是让每个集群负责的分片数量大致相同，并且进行尽量少的数据迁移。</p>
+]]></content>
+      <categories>
+        <category>基于raft实现分布式KV</category>
+      </categories>
+      <tags>
+        <tag>基于raft实现分布式KV</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>分布式锁</title>
+    <url>/2021/12/27/%E5%88%86%E5%B8%83%E5%BC%8F%E9%94%81/</url>
+    <content><![CDATA[<h1 id="分布式锁"><a href="#分布式锁" class="headerlink" title="分布式锁"></a>分布式锁</h1><p>在多线程情况下访问一些共享资源需要加锁，不然就会出现数据被写乱的问题。一般可以用数据库DB，Redis和Zookeeper实现</p>
+<p>分布式锁特点：</p>
+<ul>
+<li>安全性（Safety）：在任意时刻，只有一个客户端可以获得锁（排他性）</li>
+<li>避免死锁：客户端最终一定可以获得锁，即使锁住某个资源的客户端在释放锁之前崩溃或者网络不可达</li>
+<li>容错性：只要锁服务集群中的大部分节点存活，Client就可以进行加锁解锁操作</li>
+</ul>
+<span id="more"></span>
+
+<h2 id="Redis的分布式锁服务"><a href="#Redis的分布式锁服务" class="headerlink" title="Redis的分布式锁服务"></a>Redis的分布式锁服务</h2><p>在redis中，我们可以通过以下命令</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">SET resource_name my_random_value NX PX 30000</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><code>SET NX</code>只会在<code>key</code>不存在的时候给<code>key</code>赋值，<code>PX</code>通知redis保存这个<code>key</code>30000ms</li>
+<li><code>my_random_value</code>必须是全局唯一的值。这个随机数在释放锁时保证释放锁操作的安全性</li>
+<li><code>PX</code>操作后面的参数代表的是这个<code>key</code>的存活时间，称为锁过期时间</li>
+<li>当资源被锁定超过这个时间时，锁将自动释放</li>
+<li>获得锁的客户端如果没有在这个时间窗口内完成操作，就可能会有其他客户端获得锁，引起争用问题</li>
+</ul>
+<p>这里的原理是，只有在某个key不存在的情况下才能设置（set）成功该key这就导致多个进程并发设置同一个key</p>
+<p>申请成功的锁解锁：</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">if redis.call(&quot;get&quot;,KEYS[1]) == ARGV[1] then </span><br><span class="line">    return redis.call(&quot;del&quot;,KEYS[1]) </span><br><span class="line">else </span><br><span class="line">    return 0 </span><br><span class="line">end</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>如果key对应的value一致，则删除这个key。</p>
+<p>通过这个方式释放锁时为了避免Client释放了其他Client申请的锁</p>
+</blockquote>
+<p>例如，这个例子演示了不区分Client出现的问题</p>
+<ol>
+<li>Client A获得了一把锁</li>
+<li>当尝试释放锁的请求发送给Redis时被阻塞，没有即使到达Redis</li>
+<li>锁定时间超时，Redis认为锁的租约到期，释放了这个锁</li>
+<li>Client B重新申请到了这个锁</li>
+<li>Client A的解锁请求到达，释放了Client B的锁</li>
+<li>Client C也获得了锁</li>
+<li>Client B 和 Client C 同时持有锁</li>
+</ol>
+<p>通过上面这种方式，Client的解锁操作只会解锁自己曾经加锁的资源，所以是安全的</p>
+<p>关于 value 的生成，官方推荐从 /dev/urandom 中取 20 个 byte 作为随机数。或者采用更加简单的方式，例如使用 RC4 加密算法在 /dev/urandom 中得到一个种子（Seed），然后生成一个伪随机流</p>
+<p>也可以采用更简单的方法，使用时间戳 + 客户端编号的方式生成随机数。Redis 的官方文档说：“这种方式的安全性较差一些，但对于绝大多数的场景来说已经足够安全了”。</p>
+<h2 id="分布式锁服务的一个问题"><a href="#分布式锁服务的一个问题" class="headerlink" title="分布式锁服务的一个问题"></a>分布式锁服务的一个问题</h2><p>为了避免Client端把锁占住不放，然后，Redis在超时后把其释放掉。这样就很不靠谱了</p>
+<p>举个例子</p>
+<ul>
+<li>如果 Client A 先取得了锁。</li>
+<li>其它 Client（比如说 Client B）在等待 Client A 的工作完成。</li>
+<li>这个时候，如果 Client A 被挂在了某些事上，比如一个外部的阻塞调用，或是 CPU 被别的进程吃满，或是不巧碰上了 Full GC，导致 Client A 花了超过平时几倍的时间。</li>
+<li>然后，我们的锁服务因为怕死锁，就在一定时间后，把锁给释放掉了。</li>
+<li>此时，Client B 获得了锁并更新了资源。</li>
+<li>这个时候，Client A 服务缓过来了，然后也去更新了资源。于是乎，把 Client B 的更新给冲掉了。</li>
+<li>这就造成了数据出错。</li>
+</ul>
+<p><img src="https://cdn.jsdelivr.net/gh/Chovyyyyyy/blogPhoto/Lehends/202112300204882.png"></p>
+<p>要解决这个问题，我们可以引入fence（栅栏）技术。一般来说，这是乐观锁机制，需要一个版本号排它</p>
+<p><img src="https://cdn.jsdelivr.net/gh/Chovyyyyyy/blogPhoto/Lehends/202112300204023.png"></p>
+<p>我们从图中可以看到</p>
+<ul>
+<li>锁服务需要有一个单调递增的版本号</li>
+<li>写数据的时候，也需要带上自己的版本号</li>
+<li>数据库服务需要保存数据的版本号，然后对请求做检查</li>
+</ul>
+<p>如果使用ZooKeeper做锁服务的话，那么可以使用<code>zxid</code>或<code>znode</code>的版本号来做这个fence版本号</p>
+<h2 id="从乐观锁到CAS"><a href="#从乐观锁到CAS" class="headerlink" title="从乐观锁到CAS"></a>从乐观锁到CAS</h2><p><img src="https://cdn.jsdelivr.net/gh/Chovyyyyyy/blogPhoto/Lehends/202112300204600.png"></p>
+<p>在数据库中可以使用数据版本（Version）记录机制，即为数据增加一个版本标识，一般是通过为数据库表增加一个数字类型的”version”字段来实现。当读取数据时，将 version 字段的值一同读出，数据每更新一次，对此 version 值加一。</p>
+<p>这是乐观锁最常用的一种实现方式。<strong>是的，如果我们使用版本号，或是 fence token 这种方式，就不需要使用分布式锁服务了。</strong></p>
+<h2 id="分布式锁设计的重点"><a href="#分布式锁设计的重点" class="headerlink" title="分布式锁设计的重点"></a>分布式锁设计的重点</h2><p>一般情况下，我们可以使用数据库，Redis或者ZooKeeper来做分布式锁服务</p>
+<p>分布式锁的特点是，保证在一个集群中，同一个方法在同一时间只能被一台机器上的一个线程执行。这就是所谓的分布式互斥。</p>
+<p>我们需要明确一下分布式锁服务的初衷和几个概念性问题</p>
+<ul>
+<li>如果锁的进程挂掉了怎么办？一般的处理方法是在锁服务加上一个过期时间，如果这个时间内锁没有被还回来，那么锁服务要自动解锁，以避免全部锁住</li>
+<li>如果锁服务自动解锁了，新的进程拿到锁了，但之前的进程以为自己还有锁，那么就出现了两个进程拿到同一个锁的问题，它们在更新数据的时候就会产生问题：像Redis那样也可以使用Check and Set的方式来保证数据的一致性，这就有点像CAS。那还需要分布式锁服务吗？的确是不需要，但现实生活中也有不需要更新某个数据的场景，只是为了同步或是互斥一下不同机器上的线程，这时候分布式锁就有意义了</li>
+</ul>
+<p>如果确定要分布式锁服务，你需要考虑下面几个设计：</p>
+<ul>
+<li>需要给一个锁被释放的方式，以避免请求者不把锁还回来导致死锁的问题。Redis使用超时时间，ZooKeeper可以依靠自身的sessionTimeout来删除节点</li>
+<li>分布式锁服务应该是高可用的，而且需要持久化</li>
+<li>要提供非阻塞方式的锁服务</li>
+<li>还要考虑锁的可重入性</li>
+</ul>
+]]></content>
+      <categories>
+        <category>分布式</category>
+      </categories>
+      <tags>
+        <tag>分布式</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>raft实现</title>
+    <url>/2022/01/25/raft%E5%AE%9E%E7%8E%B0/</url>
+    <content><![CDATA[<p>在实现lab之前，可以先看6.824有关raft和go，threads的视频</p>
+<p><a href="https://www.jianshu.com/p/96ab0e8ad8f1">raft论文</a></p>
+<p><a href="https://thesquareplanet.com/blog/students-guide-to-raft/">关于raft实现的学生指导</a></p>
+<p>然后我们就可以开始实现raft</p>
+<span id="more"></span>
+
+<h2 id="lab2A：leader选举"><a href="#lab2A：leader选举" class="headerlink" title="lab2A：leader选举"></a>lab2A：leader选举</h2><p>这一部分，我们需要做的是：</p>
+<h3 id="初始化"><a href="#初始化" class="headerlink" title="初始化"></a>初始化</h3><p>首先根据论文的figure2（<a href="https://www.jianshu.com/p/96ab0e8ad8f1">raft论文</a>参考中文版），把raft每个server的状态，日志追加，请求投票进行定义</p>
+<blockquote>
+<p>注意需要持久化的部分，这很关键</p>
+</blockquote>
+<p><img src="https://cdn.jsdelivr.net/gh/Chovyyyyyy/blogPhoto/Lehends/202201250054726.webp"></p>
+<p>有一部分定义已经给出，剩余的可以根据figure2进行定义</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="keyword">type</span> Raft <span class="keyword">struct</span> &#123;</span><br><span class="line">		mu        sync.Mutex          <span class="comment">// Lock to protect shared access to this peer&#x27;s state</span></span><br><span class="line">	peers     []*labrpc.ClientEnd <span class="comment">// RPC end points of all peers</span></span><br><span class="line">	persister *Persister          <span class="comment">// Object to hold this peer&#x27;s persisted state</span></span><br><span class="line">	me        <span class="keyword">int</span>                 <span class="comment">// this peer&#x27;s index into peers[]</span></span><br><span class="line">	dead      <span class="keyword">int32</span>               <span class="comment">// set by Kill()</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">// Your data here (2A, 2B, 2C).</span></span><br><span class="line">	<span class="comment">// Look at the paper&#x27;s Figure 2 for a description of what</span></span><br><span class="line">	<span class="comment">// state a Raft server must maintain.</span></span><br><span class="line">	<span class="comment">// 持久性状态</span></span><br><span class="line">	currentTerm <span class="keyword">int</span>     <span class="comment">// 最新任期</span></span><br><span class="line">	votedFor    <span class="keyword">int</span>     <span class="comment">// 获得选票的候选人Id</span></span><br><span class="line">	log         []Entry <span class="comment">// 日志条目</span></span><br><span class="line">	getVoteNum  <span class="keyword">int</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">//所有server易失性状态</span></span><br><span class="line">	commitIndex <span class="keyword">int</span> <span class="comment">// 被提交的最高日志索引</span></span><br><span class="line">	lastApplied <span class="keyword">int</span> <span class="comment">// 已应用于状态机的最高日志条目索引</span></span><br><span class="line"></span><br><span class="line">	state        <span class="keyword">int</span></span><br><span class="line">	electionTime time.Time</span><br><span class="line"></span><br><span class="line">	<span class="comment">//leader的易失性状态</span></span><br><span class="line">	nextIndex  []<span class="keyword">int</span> <span class="comment">// 对于每个server，要发送给该server的下一个日志的索引（leader的最后一个日志索引+1）</span></span><br><span class="line">	matchIndex []<span class="keyword">int</span> <span class="comment">// 对于每个server，在服务器上复制的最新日志的索引</span></span><br><span class="line"></span><br><span class="line">	applyCh <span class="keyword">chan</span> ApplyMsg</span><br><span class="line">	<span class="comment">// SnapShot</span></span><br><span class="line">	lastSnapShotIndex <span class="keyword">int</span></span><br><span class="line">	lastSnapShotTerm  <span class="keyword">int</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>然后我们通过make()对raft进行初始化</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Make</span><span class="params">(peers []*labrpc.ClientEnd, me <span class="keyword">int</span>,</span></span></span><br><span class="line"><span class="params"><span class="function">	persister *Persister, applyCh <span class="keyword">chan</span> ApplyMsg)</span> *<span class="title">Raft</span></span> &#123;</span><br><span class="line">	rf := &amp;Raft&#123;&#125;</span><br><span class="line">	rf.peers = peers</span><br><span class="line">	rf.persister = persister</span><br><span class="line">	rf.me = me</span><br><span class="line"></span><br><span class="line">	<span class="comment">// Your initialization code here (2A, 2B, 2C).</span></span><br><span class="line">	rf.mu.Lock()</span><br><span class="line">	rf.state = FOLLOWER</span><br><span class="line">	rf.currentTerm = <span class="number">0</span></span><br><span class="line">	rf.getVoteNum = <span class="number">0</span></span><br><span class="line">	rf.votedFor = <span class="number">-1</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">	rf.lastApplied = <span class="number">0</span></span><br><span class="line">	rf.commitIndex = <span class="number">0</span></span><br><span class="line"></span><br><span class="line">	rf.log = []Entry&#123;&#125;</span><br><span class="line">	rf.log = <span class="built_in">append</span>(rf.log, Entry&#123;&#125;)</span><br><span class="line"></span><br><span class="line">	rf.applyCh = applyCh</span><br><span class="line"></span><br><span class="line">	rf.lastSnapShotIndex = <span class="number">0</span></span><br><span class="line">	rf.lastSnapShotTerm = <span class="number">0</span></span><br><span class="line">	rf.mu.Unlock()</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 从崩溃前的持久化状态进行恢复</span></span><br><span class="line">	rf.readPersist(persister.ReadRaftState())</span><br><span class="line">	<span class="keyword">if</span> rf.lastSnapShotIndex &gt; <span class="number">0</span> &#123;</span><br><span class="line">		rf.lastApplied = rf.lastSnapShotIndex</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 使用goroutine进行leader选举和发送心跳包</span></span><br><span class="line">	<span class="keyword">go</span> rf.leaderElectionTicker()</span><br><span class="line"></span><br><span class="line">	<span class="keyword">go</span> rf.heartBeatTicker()</span><br><span class="line"></span><br><span class="line">	<span class="keyword">go</span> rf.appliedTicker()</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> rf</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>除了基本的初始化外，还需要启动三个goroutine：leaderElectionTicker()，heartBeatTicker()和applier()</p>
+<h4 id="leaderElectionTicker"><a href="#leaderElectionTicker" class="headerlink" title="leaderElectionTicker()"></a>leaderElectionTicker()</h4><p>每隔选举间隔判断选举是否超时和server的状态</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="keyword">for</span> !rf.killed() &#123;</span><br><span class="line">		nowTime := time.Now()</span><br><span class="line">		time.Sleep(time.Duration(getRand(<span class="keyword">int64</span>(rf.me)))*time.Millisecond)</span><br><span class="line">		rf.mu.Lock()</span><br><span class="line">		<span class="comment">// 判断选举超时时间是否在当前时间之后</span></span><br><span class="line">		<span class="keyword">if</span> rf.electionTime.Before(nowTime) &amp;&amp; rf.state != LEADER&#123;</span><br><span class="line">			rf.targetState(TO_CANDIDATE,<span class="literal">true</span>)</span><br><span class="line">		&#125;</span><br><span class="line">		rf.mu.Unlock()</span><br><span class="line"></span><br><span class="line">	&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h4 id="heartBeatTicker"><a href="#heartBeatTicker" class="headerlink" title="heartBeatTicker()"></a>heartBeatTicker()</h4><ul>
+<li><p>这里的目的是：当<code>server</code>没有宕机时并且<code>state</code>为leader时，每隔<code>heartbeat</code>向follower发送心跳包防止重新选举</p>
+<blockquote>
+<p>注意要加锁</p>
+</blockquote>
+</li>
+</ul>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span> <span class="title">ticker</span><span class="params">()</span></span> &#123;</span><br><span class="line">	<span class="keyword">for</span> !rf.killed() &#123;</span><br><span class="line">		time.Sleep(HEARTBEAT * time.Millisecond)</span><br><span class="line">		rf.mu.Lock()</span><br><span class="line">		<span class="keyword">if</span> rf.state == LEADER &#123;</span><br><span class="line">			rf.mu.Unlock()</span><br><span class="line">			rf.leaderAppendEntries()</span><br><span class="line">		&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">			rf.mu.Unlock()</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="applier"><a href="#applier" class="headerlink" title="applier"></a>applier</h4><p>处理日志提交，按照studentGuide使用applyCond</p>
+<p><img src="https://cdn.jsdelivr.net/gh/Chovyyyyyy/blogPhoto/Lehends/202201251145871.png" alt="image-20220125114510408"></p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span> <span class="title">applier</span><span class="params">()</span></span> &#123;</span><br><span class="line">	rf.mu.Lock()</span><br><span class="line">	<span class="keyword">defer</span> rf.mu.Unlock()</span><br><span class="line"></span><br><span class="line">	<span class="keyword">for</span> !rf.killed() &#123;</span><br><span class="line">		<span class="keyword">if</span> rf.commitIndex &gt; rf.lastApplied &amp;&amp; rf.log.Entries[<span class="built_in">len</span>(rf.log.Entries)<span class="number">-1</span>].Index &gt; rf.lastApplied &#123;</span><br><span class="line">			rf.lastApplied++</span><br><span class="line">			applyMsg := ApplyMsg&#123;</span><br><span class="line">				CommandValid: <span class="literal">true</span>,</span><br><span class="line">				Command:      rf.log.Entries[rf.lastApplied].Command,</span><br><span class="line">				CommandIndex: rf.lastApplied,</span><br><span class="line">			&#125;</span><br><span class="line">			DPrintf(<span class="string">&quot;[%v]: COMMIT %d: %v&quot;</span>, rf.me, rf.lastApplied, rf.commits())</span><br><span class="line">			rf.mu.Unlock()</span><br><span class="line">			rf.applyCh &lt;- applyMsg</span><br><span class="line">			rf.mu.Lock()</span><br><span class="line">		&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">			rf.applyCond.Wait()</span><br><span class="line">			DPrintf(<span class="string">&quot;[%v]: rf.applyCond.Wait()&quot;</span>, rf.me)</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h3 id="leader选举"><a href="#leader选举" class="headerlink" title="leader选举"></a>leader选举</h3><figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="comment">// leaderElection 发起选举</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span> <span class="title">leaderElection</span><span class="params">()</span></span> &#123;</span><br><span class="line">	rf.currentTerm++</span><br><span class="line">	rf.state = CANDIDATE</span><br><span class="line">	rf.votedFor = rf.me</span><br><span class="line">	rf.persist()</span><br><span class="line">	rf.electionTime = time.Now()</span><br><span class="line">	term := rf.currentTerm</span><br><span class="line">	voteCounter := <span class="number">1</span></span><br><span class="line">	DPrintf(<span class="string">&quot;[%v]: start leader election, term %d\n&quot;</span>, rf.me, rf.currentTerm)</span><br><span class="line">	args := RequestVoteArgs&#123;</span><br><span class="line">		Term:         term,</span><br><span class="line">		CandidateId:  rf.me,</span><br><span class="line">		LastLogIndex: rf.getLastIndex(),</span><br><span class="line">		LastLogTerm:  rf.getLastTerm(),</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">var</span> once sync.Once</span><br><span class="line">    <span class="comment">// 遍历每一个server</span></span><br><span class="line">	<span class="keyword">for</span> serverId, _ := <span class="keyword">range</span> rf.peers &#123;</span><br><span class="line">		<span class="keyword">if</span> serverId != rf.me &#123;</span><br><span class="line">			<span class="keyword">go</span> rf.candidateRequestVote(serverId, &amp;args, &amp;voteCounter, &amp;once)</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这部分需要按照论文实现</p>
+<p><img src="https://cdn.jsdelivr.net/gh/Chovyyyyyy/blogPhoto/Lehends/202201250110527.png"></p>
+<p>这部分需要注意的是：</p>
+<ol>
+<li><code>currentTerm</code>，<code>votedFor</code>，<code>log</code>这三个部分是需要持久化的</li>
+<li>需要将server的状态定义为candidate</li>
+<li>需要给自己投一票</li>
+<li>在发起选举的时候，我们要重置选举超时</li>
+<li><strong>这里使用了<code>once</code>这个锁，</strong>可以确保请求投票只会发起一次</li>
+<li>对每一个server开启一个goroutine，然后发起投票<code>candidateRequestVote</code></li>
+</ol>
+<h4 id="candidateRequestVote"><a href="#candidateRequestVote" class="headerlink" title="candidateRequestVote"></a>candidateRequestVote</h4><figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="comment">// candidateRequestVote 选举请求</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span> <span class="title">candidateRequestVote</span><span class="params">(serverId <span class="keyword">int</span>, args *RequestVoteArgs, voteCounter *<span class="keyword">int</span>, once *sync.Once)</span></span> &#123;</span><br><span class="line">	DPrintf(<span class="string">&quot;[%d]: term %v send vote request to %d\n&quot;</span>, rf.me, args.Term, serverId)</span><br><span class="line">	reply := RequestVoteReply&#123;&#125;</span><br><span class="line">	ok := rf.sendRequestVote(serverId, args, &amp;reply)</span><br><span class="line">	<span class="keyword">if</span> !ok &#123;</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line">	rf.mu.Lock()</span><br><span class="line">	<span class="keyword">defer</span> rf.mu.Unlock()</span><br><span class="line">	<span class="comment">//论文5.1</span></span><br><span class="line">	<span class="comment">//如果RPC请求或响应包含任期 T &gt; currentTerm：设置currentTerm = T，转换为follower</span></span><br><span class="line">	<span class="keyword">if</span> reply.Term &gt; args.Term &#123;</span><br><span class="line">		DPrintf(<span class="string">&quot;[%d]: %d 在新的term，更新term，结束\n&quot;</span>, rf.me, serverId)</span><br><span class="line">		rf.setNewTerm(reply.Term)</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">//如果返回的term小于candidate的term，则返回</span></span><br><span class="line">	<span class="keyword">if</span> reply.Term &lt; args.Term &#123;</span><br><span class="line">		DPrintf(<span class="string">&quot;[%d]: %d 的term %d 已经失效，结束\n&quot;</span>, rf.me, serverId, reply.Term)</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">// 如果没有获得选票，则返回</span></span><br><span class="line">	<span class="keyword">if</span> !reply.VoteGranted &#123;</span><br><span class="line">		DPrintf(<span class="string">&quot;[%d]: %d 没有投给me，结束\n&quot;</span>, rf.me, serverId)</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">// 如果candidate和当前节点的日志一样新，则投票</span></span><br><span class="line">	DPrintf(<span class="string">&quot;[%d]: from %d term一致，且投给%d\n&quot;</span>, rf.me, serverId, rf.me)</span><br><span class="line">	*voteCounter++</span><br><span class="line">	<span class="comment">//如果收到超过半数投票，并且candidate的term没有落后于最新（没有回到follower），当选为leader</span></span><br><span class="line">	<span class="keyword">if</span> *voteCounter &gt; <span class="built_in">len</span>(rf.peers)/<span class="number">2</span> &amp;&amp; rf.currentTerm == args.Term &amp;&amp; rf.state == Candidate &#123;</span><br><span class="line">		DPrintf(<span class="string">&quot;[%d]: 获得多数选票，可以提前结束\n&quot;</span>, rf.me)</span><br><span class="line">		once.Do(<span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">			DPrintf(<span class="string">&quot;[%d]: 当前term %d 结束\n&quot;</span>, rf.me, rf.currentTerm)</span><br><span class="line">			rf.state = Leader</span><br><span class="line">			lastLogIndex := rf.log.Entries[<span class="built_in">len</span>(rf.log.Entries)<span class="number">-1</span>].Index</span><br><span class="line">			<span class="comment">//选举后重新初始化</span></span><br><span class="line">			<span class="keyword">for</span> i, _ := <span class="keyword">range</span> rf.peers &#123;</span><br><span class="line">				<span class="comment">//对于每个服务器</span></span><br><span class="line">				<span class="comment">//要发送给该服务器的下一个日志条目索引</span></span><br><span class="line">				<span class="comment">//初始化为leader的最后一个日志索引+1</span></span><br><span class="line">				rf.nextIndex[i] = lastLogIndex + <span class="number">1</span></span><br><span class="line">				<span class="comment">//对于每个服务器</span></span><br><span class="line">				<span class="comment">//已知在服务器上复制的最高日志条目的索引</span></span><br><span class="line">				<span class="comment">//初始化为0</span></span><br><span class="line">				rf.matchIndex[i] = <span class="number">0</span></span><br><span class="line">			&#125;</span><br><span class="line">			<span class="comment">//当选leader之后要立刻发送heartbeat</span></span><br><span class="line">			rf.appendEntries(<span class="literal">true</span>)</span><br><span class="line">		&#125;)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在选举请求中，我们需要做的是：</p>
+<ol>
+<li><p>首先，通过rpc向每一个server发起投票请求</p>
+</li>
+<li><p>当收到RPC响应的任期比自己的currentTerm要新时，要更新currentTerm，并重新回到follower<img src="https://cdn.jsdelivr.net/gh/Chovyyyyyy/blogPhoto/Lehends/202201250852198.png"></p>
+</li>
+<li><p>如果收到响应的任期比自己的要旧时，那么就认为任期是过时的，将直接拒绝，然后直接return</p>
+<p><img src="https://cdn.jsdelivr.net/gh/Chovyyyyyy/blogPhoto/Lehends/202201250852961.png" alt="image-20220125085108747"></p>
+</li>
+<li><p>当收到票数过半，candidate的任期和响应的任期一致并且状态仍然是candidate（即任期最新），我们就认为选举成功：</p>
+<ul>
+<li><p>首先设置状态为leader</p>
+</li>
+<li><p>然后将日志最后索引更新为最后一个日志索引</p>
+</li>
+<li><p><img src="https://cdn.jsdelivr.net/gh/Chovyyyyyy/blogPhoto/Lehends/202201250903031.png" alt="image-20220125090305047"></p>
+<p>选举后初始化</p>
+</li>
+<li><p>最后并行向每个follower发送心跳包，宣布自己胜出，并防止重新选举<img src="https://cdn.jsdelivr.net/gh/Chovyyyyyy/blogPhoto/Lehends/202201251356014.png"></p>
+</li>
+</ul>
+</li>
+</ol>
+<h4 id="RequestVote"><a href="#RequestVote" class="headerlink" title="RequestVote"></a>RequestVote</h4><figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span> <span class="title">RequestVote</span><span class="params">(args *RequestVoteArgs, reply *RequestVoteReply)</span></span> &#123;</span><br><span class="line">	<span class="comment">// Your code here (2A, 2B).</span></span><br><span class="line">	rf.mu.Lock()</span><br><span class="line">	<span class="keyword">defer</span> rf.mu.Unlock()</span><br><span class="line"></span><br><span class="line">	<span class="comment">//rule 1</span></span><br><span class="line">	<span class="comment">//如果收到请求的任期比自己的要旧时，那么就认为请求是过时的，返回false，然后直接return</span></span><br><span class="line">	<span class="keyword">if</span> args.Term &lt; rf.currentTerm &#123;</span><br><span class="line">		reply.VoteGranted = <span class="literal">false</span></span><br><span class="line">		reply.Term = rf.currentTerm</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">// 当收到RPC请求的任期比自己的currentTerm要新时，要更新currentTerm，并重新回到follower</span></span><br><span class="line">	<span class="keyword">if</span> args.Term &gt; rf.currentTerm &#123;</span><br><span class="line">		rf.currentTerm = args.Term</span><br><span class="line">		rf.targetState(TO_FOLLOWER,<span class="literal">false</span>)</span><br><span class="line">		rf.persist()</span><br><span class="line">	&#125;</span><br><span class="line">	reply.Term = rf.currentTerm</span><br><span class="line">	<span class="comment">//rule 2</span></span><br><span class="line">	<span class="keyword">if</span> !rf.UpToDate(args.LastLogIndex,args.LastLogTerm) &#123;</span><br><span class="line">		reply.VoteGranted = <span class="literal">false</span></span><br><span class="line">		reply.Term = rf.currentTerm</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">// 已经投票给别的server</span></span><br><span class="line">	<span class="keyword">if</span> rf.votedFor != <span class="number">-1</span> &amp;&amp; rf.votedFor != args.CandidateId &amp;&amp; args.Term == reply.Term &#123;</span><br><span class="line">		reply.VoteGranted = <span class="literal">false</span></span><br><span class="line">		reply.Term = rf.currentTerm</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;<span class="keyword">else</span> &#123;</span><br><span class="line">		rf.votedFor = args.CandidateId</span><br><span class="line">		reply.VoteGranted = <span class="literal">true</span></span><br><span class="line">		rf.currentTerm = args.Term</span><br><span class="line">		reply.Term = rf.currentTerm</span><br><span class="line">		rf.electionTime = time.Now()</span><br><span class="line">		rf.persist()</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>如果请求的LastLogTerm&gt;=follower的Term，并且请求的LastLogIndex&gt;=follower的lastLog，可以进行投票</p>
+<h2 id="lab2B：日志复制和日志追加"><a href="#lab2B：日志复制和日志追加" class="headerlink" title="lab2B：日志复制和日志追加"></a>lab2B：日志复制和日志追加</h2><h3 id="leader发送appendEntries"><a href="#leader发送appendEntries" class="headerlink" title="leader发送appendEntries"></a>leader发送appendEntries</h3><p>在完成leader选举之后，leader会马上发送一次心跳包。在空闲时会按照心跳周期重复，进行心跳检测，判断是否出现server宕机。</p>
+<p>包含log的心跳包：当心跳周期到了，要发送appendEntries，但是follower落后了，所以要追加日志</p>
+<ul>
+<li><p>请求处理(request handler)<br><code>currentTerm &lt; args.Term</code>，根据当前状态：</p>
+<ul>
+<li><code>Follower</code><br>可能为正常情况，比如3个Raft实例刚启动，都处于<code>Follower</code>状态，s0的选举超时时间先耗尽，变为<code>Candidate</code>状态，任期为1发起选举。s1此时任期为0，处于<code>Follower</code>状态，收到s0的RequestVote RPC请求。这时应该继续正常执行RequestVote RPC处理程序，检查s0的日志是否”up-to-date”，如果是，则投票给s0。<br>但仍然可以将<code>voteFor</code>重置为-1，因为既然该peer的<code>rf.currentTerm &lt; args.Term</code>，说明该peer此时还没有给哪个candidate投票，因为一旦它投过票，其任期就会更新为<code>args.Term</code>。所以此时重置<code>voteFor</code>为-1是安全的，往下继续执行处理，仍然可以投票。</li>
+<li><code>Candidate</code><br>说明此候选者状态过时，由于<code>Candidate</code>在发起选举时给自己投票，会将<code>voteFor</code>设置为自身的id，所以在切换到<code>Follower</code>状态时，需要重置<code>voteFor</code>为-1，以便可以再次投票。<del>同时相当于了解到更高任期的候选者的信息，需要重置选举超时计时器</del>。这里不需要重置选举超时计时器，该工作在接下来给出投票时进行重置，如果拒绝了投票请求，就不会重置选举超时计时器，这时它可以再次发起选举。该RequestVote请求合法，继续执行处理。</li>
+<li><code>Leader</code><br>一种可能的情况是，3个Raft实例，s0为leader，s1和s2为follower，任期都为1。这是s0宕机，s2由于选举超时变为candidate，发起选举，任期为2。这期间s0恢复，收到s2的RequestVote请求。由于leader在发起选举时投票给自己，s0需要重置<code>voteFor</code>为-1。<del>同时重置选举超时定时器</del>。该RequestVote请求合法，继续执行处理。<br>s0由leader切换到follower状态时，需要给<code>nonLeaderCond</code>条件变量发广播，以唤醒休眠的<code>electionTimeoutTick</code>goroutine。我们通过<code>swithTo()</code>函数统一处理状态切换，以便可以不遗漏的处理leader和nonLeader状态切换引起的需要给<code>leaderCond</code>或<code>nonLeaderCond</code>条件变量发信号的处理。</li>
+</ul>
+<p>以上可以看出，在RequestVote RPC的请求处理中，当<code>rf.currentTerm &lt; args.Term</code>时，除了设置<code>rf.currentTerm = args.Term</code>，切换为<code>Follower</code>状态外，不管该peer之前处于什么状态，都需要重置<code>voteFor</code>为-1，然后继续执行请求处理，根据args参数是否是“up-to-date”，以决定是否给出投票。<br>对于该peer之前处于<code>Follower</code>和<code>Candidate</code>的场景，再给出一个例子：比如有5个server，启动后s0, s2, s4选取的选举超时时间相同，同时超时，所以同时发起选举(s0, s2, s4发起选举前再次重置选举超时计时器)，s0获得自身和s1的投票，s2获得自身和s3的投票，s4只有自己的投票，三者都没有获得大多数选票，此term1选举被瓜分，紧接着，s2率先选举超时，再次发起选举，如(b)所示，此时，s0, s4作为candidate，重置<code>voteFor</code>为-1，s1, s3作为follower，重置<code>voteFor</code>为-1，如(c)所示，然后，由于s2满足”up-to-date”，获得所有peers的投票，变为leader，如(d)所示。</p>
+</li>
+<li><p>回复处理(reply processing)<br><code>currentTerm &lt; reply.Term</code>，此时类似于请求中的<code>Candidate</code>状态，说明此候选者状态过时，进行和上面一样的处理。</p>
+</li>
+</ul>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 发送给每台服务器进行日志复制</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span> <span class="title">AppendEntries</span><span class="params">(args *AppendEntriesArgs, reply *AppendEntriesReply)</span></span> &#123;</span><br><span class="line">	rf.mu.Lock()</span><br><span class="line">	<span class="keyword">defer</span> rf.mu.Unlock()</span><br><span class="line">	<span class="comment">// rule 1</span></span><br><span class="line">	<span class="comment">// 说明请求超时了</span></span><br><span class="line">	<span class="keyword">if</span> args.Term &lt; rf.currentTerm &#123;</span><br><span class="line">		reply.Term = rf.currentTerm</span><br><span class="line">		reply.Success = <span class="literal">false</span></span><br><span class="line">		reply.ConflictingIndex = <span class="number">-1</span></span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	rf.currentTerm = args.Term</span><br><span class="line">	reply.Term = rf.currentTerm</span><br><span class="line">	reply.Success = <span class="literal">true</span></span><br><span class="line">	reply.ConflictingIndex = <span class="number">-1</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">// 判断server的state，防止选举时间超时</span></span><br><span class="line">	<span class="keyword">if</span> rf.state != FOLLOWER &#123;</span><br><span class="line">		rf.targetState(TO_FOLLOWER, <span class="literal">true</span>)</span><br><span class="line">	&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">		rf.electionTime = time.Now()</span><br><span class="line">		rf.persist()</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">// 如果快照的index要比args的index新的话，可以直接把leader的状态复制给follower</span></span><br><span class="line">	<span class="keyword">if</span> rf.lastSnapShotIndex &gt; args.PrevLogIndex &#123;</span><br><span class="line">		reply.Success = <span class="literal">false</span></span><br><span class="line">		<span class="comment">//</span></span><br><span class="line">		reply.ConflictingIndex = rf.getLastIndex() + <span class="number">1</span></span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> rf.getLastIndex() &lt; args.PrevLogIndex &#123;</span><br><span class="line">		reply.Success = <span class="literal">false</span></span><br><span class="line">		reply.ConflictingIndex = rf.getLastIndex()</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">		<span class="comment">// 如果currentTerm冲突</span></span><br><span class="line">		<span class="keyword">if</span> rf.getLogTermWithIndex(args.PrevLogIndex) != args.PrevLogTerm &#123;</span><br><span class="line">			reply.Success = <span class="literal">false</span></span><br><span class="line">			tempTerm := rf.getLogTermWithIndex(args.PrevLogIndex)</span><br><span class="line">			<span class="comment">// 从index到快照，找到冲突term</span></span><br><span class="line">			<span class="keyword">for</span> index := args.PrevLogIndex; index &gt;= rf.lastSnapShotIndex; index-- &#123;</span><br><span class="line">				<span class="keyword">if</span> rf.getLogTermWithIndex(index) != tempTerm &#123;</span><br><span class="line">					reply.ConflictingIndex = index + <span class="number">1</span></span><br><span class="line">					<span class="keyword">break</span></span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="keyword">return</span></span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">//rule 3 &amp; rule 4</span></span><br><span class="line">	rf.log = <span class="built_in">append</span>(rf.log[:args.PrevLogIndex+<span class="number">1</span>-rf.lastSnapShotIndex], args.Entries...)</span><br><span class="line">	rf.persist()</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">	<span class="comment">//rule 5</span></span><br><span class="line">	<span class="keyword">if</span> args.LeaderCommit &gt; rf.commitIndex &#123;</span><br><span class="line">		rf.updateCommitIndex(FOLLOWER, args.LeaderCommit)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="leaderAppendEntries"><a href="#leaderAppendEntries" class="headerlink" title="leaderAppendEntries"></a>leaderAppendEntries</h3><p>leader发送日志</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="comment">// leader发送Entries</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span> <span class="title">leaderAppendEntries</span><span class="params">()</span></span> &#123;</span><br><span class="line">	<span class="keyword">for</span> index := <span class="keyword">range</span> rf.peers &#123;</span><br><span class="line">		<span class="keyword">if</span> index == rf.me &#123;</span><br><span class="line">			<span class="keyword">continue</span></span><br><span class="line">		&#125;</span><br><span class="line">		<span class="comment">// 使用goroutine进行并行复制</span></span><br><span class="line">		<span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">(server <span class="keyword">int</span>)</span></span> &#123;</span><br><span class="line">			rf.mu.Lock()</span><br><span class="line">			<span class="keyword">if</span> rf.state != LEADER &#123;</span><br><span class="line">				rf.mu.Unlock()</span><br><span class="line">				<span class="keyword">return</span></span><br><span class="line">			&#125;</span><br><span class="line">			tempPrevLogIndex := rf.nextIndex[server] - <span class="number">1</span></span><br><span class="line">			<span class="comment">// 如果当前快照index比logIndex要新的话，使用快照追加</span></span><br><span class="line">			<span class="keyword">if</span> tempPrevLogIndex &lt; rf.lastSnapShotIndex &#123;</span><br><span class="line">				<span class="keyword">go</span> rf.leaderSendSnapShot(server)</span><br><span class="line">				rf.mu.Unlock()</span><br><span class="line">				<span class="keyword">return</span></span><br><span class="line">			&#125;</span><br><span class="line"></span><br><span class="line">			args := AppendEntriesArgs&#123;&#125;</span><br><span class="line">			<span class="comment">// 如果leader的lastIndex比nextIndex更新，那么需要进行日志追加，反之则不用</span></span><br><span class="line">			<span class="keyword">if</span> rf.getLastIndex() &gt;= rf.nextIndex[server] &#123;</span><br><span class="line">				entriesNeeded := <span class="built_in">make</span>([]Entry, <span class="number">0</span>)</span><br><span class="line">				entriesNeeded = <span class="built_in">append</span>(entriesNeeded, rf.log[rf.nextIndex[server]-rf.lastSnapShotIndex:]...)</span><br><span class="line">				prevLogIndex, prevLogTerm := rf.getPrevLogInfo(server)</span><br><span class="line">				args = AppendEntriesArgs&#123;</span><br><span class="line">					rf.currentTerm,</span><br><span class="line">					rf.me,</span><br><span class="line">					prevLogIndex,</span><br><span class="line">					prevLogTerm,</span><br><span class="line">					entriesNeeded,</span><br><span class="line">					rf.commitIndex,</span><br><span class="line">				&#125;</span><br><span class="line">			&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">				prevLogIndex, prevLogTerm := rf.getPrevLogInfo(server)</span><br><span class="line">				args = AppendEntriesArgs&#123;</span><br><span class="line">					rf.currentTerm,</span><br><span class="line">					rf.me,</span><br><span class="line">					prevLogIndex,</span><br><span class="line">					prevLogTerm,</span><br><span class="line">					[]Entry&#123;&#125;,</span><br><span class="line">					rf.commitIndex,</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">			reply := AppendEntriesReply&#123;&#125;</span><br><span class="line">			rf.mu.Unlock()</span><br><span class="line"></span><br><span class="line">			<span class="comment">// 通过rpc请求Raft.AppendEntries</span></span><br><span class="line">			ok := rf.sendAppendEntries(server, &amp;args, &amp;reply)</span><br><span class="line"></span><br><span class="line">			<span class="keyword">if</span> ok &#123;</span><br><span class="line">				rf.mu.Lock()</span><br><span class="line">				<span class="keyword">defer</span> rf.mu.Unlock()</span><br><span class="line"></span><br><span class="line">				<span class="keyword">if</span> rf.state != LEADER &#123;</span><br><span class="line">					<span class="keyword">return</span></span><br><span class="line">				&#125;</span><br><span class="line"></span><br><span class="line">				<span class="keyword">if</span> reply.Term &gt; rf.currentTerm &#123;</span><br><span class="line">					rf.currentTerm = reply.Term</span><br><span class="line">					rf.targetState(TO_FOLLOWER, <span class="literal">true</span>)</span><br><span class="line">					<span class="keyword">return</span></span><br><span class="line">				&#125;</span><br><span class="line"></span><br><span class="line">				<span class="keyword">if</span> reply.Success &#123;</span><br><span class="line">					rf.matchIndex[server] = args.PrevLogIndex + <span class="built_in">len</span>(args.Entries)</span><br><span class="line">					rf.nextIndex[server] = rf.matchIndex[server] + <span class="number">1</span></span><br><span class="line">					rf.updateCommitIndex(LEADER, <span class="number">0</span>)</span><br><span class="line">				&#125;</span><br><span class="line"></span><br><span class="line">				<span class="keyword">if</span> !reply.Success &#123;</span><br><span class="line">					<span class="keyword">if</span> reply.ConflictingIndex != <span class="number">-1</span> &#123;</span><br><span class="line">						rf.nextIndex[server] = reply.ConflictingIndex</span><br><span class="line">					&#125;</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line"></span><br><span class="line">		&#125;(index)</span><br><span class="line"></span><br><span class="line">	&#125;</span><br><span class="line">&#125;extIndex[serverId]--</span><br><span class="line">		&#125;</span><br><span class="line">		rf.leaderCommitRule()</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>leader发送追加日志的步骤：</p>
+<ol>
+<li><p>首先通过rpc发送日志追加</p>
+</li>
+<li><p>如果reply的任期比currentTerm新，说明leader落后了，这时leader要重新回到follower状态，开始选举</p>
+</li>
+<li><p>根据reply进行判断：</p>
+<ul>
+<li><p>如果reply.Success为true证明日志没有冲突，那么直接进行日志追加</p>
+</li>
+<li><p>如果reply.Conflict为true证明产生日志冲突：</p>
+<blockquote>
+<p>这里我们可以按照教授在raft课上讲的fast rollback进行优化，添加XTerm,XIndex,XLen三个字段</p>
+</blockquote>
+<ol>
+<li><p>当follower在冲突的log和Index上没有内容，XTerm为-1，这时nextIndex就可以设置为follower的最后一个条目</p>
+</li>
+<li><p>如果根据XTerm找到leader中对应的Term，那么可以将follower的nextIndex设置为冲突XTerm上的第一个索引</p>
+</li>
+<li><p>如果leader在日志中没找到XTerm，那么可以将follower的nextIndex设置为XIndex（XTerm的第一个Index）</p>
+<p><img src="https://cdn.jsdelivr.net/gh/Chovyyyyyy/blogPhoto/Lehends/202201251058189.png" alt="image-20220125105709304"></p>
+</li>
+</ol>
+</li>
+<li><p>如果都不满足，那么按照原始方法一个个回退进行对比</p>
+</li>
+</ul>
+</li>
+</ol>
+<h3 id="follower接收AppendEntries"><a href="#follower接收AppendEntries" class="headerlink" title="follower接收AppendEntries"></a>follower接收AppendEntries</h3><figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span> <span class="title">AppendEntries</span><span class="params">(args *AppendEntriesArgs, reply *AppendEntriesReply)</span></span> &#123;</span><br><span class="line">	rf.mu.Lock()</span><br><span class="line">	<span class="keyword">defer</span> rf.mu.Unlock()</span><br><span class="line">	<span class="comment">// rule 1</span></span><br><span class="line">	<span class="comment">// 说明请求超时了</span></span><br><span class="line">	<span class="keyword">if</span> args.Term &lt; rf.currentTerm &#123;</span><br><span class="line">		reply.Term = rf.currentTerm</span><br><span class="line">		reply.Success = <span class="literal">false</span></span><br><span class="line">		reply.ConflictingIndex = <span class="number">-1</span></span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	rf.currentTerm = args.Term</span><br><span class="line">	reply.Term = rf.currentTerm</span><br><span class="line">	reply.Success = <span class="literal">true</span></span><br><span class="line">	reply.ConflictingIndex = <span class="number">-1</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">// 判断server的state，防止选举时间超时</span></span><br><span class="line">	<span class="keyword">if</span> rf.state != FOLLOWER &#123;</span><br><span class="line">		rf.targetState(TO_FOLLOWER, <span class="literal">true</span>)</span><br><span class="line">	&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">		rf.electionTime = time.Now()</span><br><span class="line">		rf.persist()</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">// 如果快照的index要比args的index新的话，可以直接把leader的状态复制给follower</span></span><br><span class="line">	<span class="keyword">if</span> rf.lastSnapShotIndex &gt; args.PrevLogIndex &#123;</span><br><span class="line">		reply.Success = <span class="literal">false</span></span><br><span class="line">		<span class="comment">//</span></span><br><span class="line">		reply.ConflictingIndex = rf.getLastIndex() + <span class="number">1</span></span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> rf.getLastIndex() &lt; args.PrevLogIndex &#123;</span><br><span class="line">		reply.Success = <span class="literal">false</span></span><br><span class="line">		reply.ConflictingIndex = rf.getLastIndex()</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">		<span class="comment">// 如果currentTerm冲突</span></span><br><span class="line">		<span class="keyword">if</span> rf.getLogTermWithIndex(args.PrevLogIndex) != args.PrevLogTerm &#123;</span><br><span class="line">			reply.Success = <span class="literal">false</span></span><br><span class="line">			tempTerm := rf.getLogTermWithIndex(args.PrevLogIndex)</span><br><span class="line">			<span class="comment">// 从index到快照，找到冲突term</span></span><br><span class="line">			<span class="keyword">for</span> index := args.PrevLogIndex; index &gt;= rf.lastSnapShotIndex; index-- &#123;</span><br><span class="line">				<span class="keyword">if</span> rf.getLogTermWithIndex(index) != tempTerm &#123;</span><br><span class="line">					reply.ConflictingIndex = index + <span class="number">1</span></span><br><span class="line">					<span class="keyword">break</span></span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="keyword">return</span></span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">//rule 3 &amp; rule 4</span></span><br><span class="line">	rf.log = <span class="built_in">append</span>(rf.log[:args.PrevLogIndex+<span class="number">1</span>-rf.lastSnapShotIndex], args.Entries...)</span><br><span class="line">	rf.persist()</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">	<span class="comment">//rule 5</span></span><br><span class="line">	<span class="keyword">if</span> args.LeaderCommit &gt; rf.commitIndex &#123;</span><br><span class="line">		rf.updateCommitIndex(FOLLOWER, args.LeaderCommit)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>follower追加日志的步骤：</p>
+<ol>
+<li><p>首先查看自己是否因为宕机而落后，或者追加日志已经落后</p>
+</li>
+<li><p>然后重置选举时间，防止选举超时</p>
+</li>
+<li><p>如果当前是candidate，当收到leader的追加日志时，要回到follower状态</p>
+</li>
+<li><p>然后日志追加需要分情况处理：</p>
+<ol>
+<li>如果日志在prevLogIndex处不包含term与prevLogTerm匹配的条目，则返回false<ul>
+<li>当follower的日志最后索引小于请求的PreLogIndex，说明日志的XTerm不存在</li>
+<li>如果follower的term不等于请求log的term，说明日志冲突。这时要定义XTerm和XIndex</li>
+</ul>
+</li>
+</ol>
+<p><img src="https://cdn.jsdelivr.net/gh/Chovyyyyyy/blogPhoto/Lehends/202201251117346.png" alt="image-20220125111740972"></p>
+<p>剩余情况可以根据figure2进行处理</p>
+</li>
+</ol>
+<h3 id="leaderCommitRule"><a href="#leaderCommitRule" class="headerlink" title="leaderCommitRule"></a>leaderCommitRule</h3><figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 更新commitIndex</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span> <span class="title">updateCommitIndex</span><span class="params">(role <span class="keyword">int</span>,leaderCommit <span class="keyword">int</span>)</span></span>&#123;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> role != LEADER&#123;</span><br><span class="line">		<span class="comment">// 如果leaderCommit要比follower的commitIndex要新</span></span><br><span class="line">		<span class="keyword">if</span> leaderCommit &gt; rf.commitIndex &#123;</span><br><span class="line">			<span class="comment">// 判断最后的Index是否比leaderCommit要新</span></span><br><span class="line">			<span class="comment">// 如果leader的更新，我们先要提交lastIndex</span></span><br><span class="line">			lastNewIndex := rf.getLastIndex()</span><br><span class="line">			<span class="keyword">if</span> leaderCommit &gt;= lastNewIndex&#123;</span><br><span class="line">				rf.commitIndex = lastNewIndex</span><br><span class="line">			&#125;<span class="keyword">else</span>&#123;</span><br><span class="line">				rf.commitIndex = leaderCommit</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 按照Figure2 的 Rules for leader最后一条</span></span><br><span class="line">	<span class="comment">// 如果存在一个N，使得N&gt;commitIndex，大多数的matchIndex[i]≥N，</span></span><br><span class="line">	<span class="comment">// 并且log[N].term == currentTerm：设置commitIndex = N</span></span><br><span class="line">	<span class="keyword">if</span> role == LEADER&#123;</span><br><span class="line">		rf.commitIndex = rf.lastSnapShotIndex</span><br><span class="line">		<span class="comment">// 从index到快照，找到冲突term</span></span><br><span class="line">		<span class="keyword">for</span> index := rf.getLastIndex();index&gt;=rf.lastSnapShotIndex+<span class="number">1</span>;index--&#123;</span><br><span class="line">			sum := <span class="number">0</span></span><br><span class="line">			<span class="keyword">for</span> i := <span class="number">0</span>;i&lt;<span class="built_in">len</span>(rf.peers);i++ &#123;</span><br><span class="line">				<span class="keyword">if</span> i == rf.me&#123;</span><br><span class="line">					sum += <span class="number">1</span></span><br><span class="line">					<span class="keyword">continue</span></span><br><span class="line">				&#125;</span><br><span class="line">				<span class="keyword">if</span> rf.matchIndex[i] &gt;= index &#123;</span><br><span class="line">					sum += <span class="number">1</span></span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line"></span><br><span class="line">			<span class="comment">//log.Printf(&quot;lastSSP:%d, index: %d, commitIndex: %d, lastIndex: %d&quot;,rf.lastSnapShotIndex, index, rf.commitIndex, rf.getLastIndex())</span></span><br><span class="line">			<span class="keyword">if</span> sum &gt;= <span class="built_in">len</span>(rf.peers)/<span class="number">2</span>+<span class="number">1</span> &amp;&amp; rf.getLogTermWithIndex(index)==rf.currentTerm &#123;</span><br><span class="line">				rf.commitIndex = index</span><br><span class="line">				<span class="keyword">break</span></span><br><span class="line">			&#125;</span><br><span class="line"></span><br><span class="line">		&#125;</span><br><span class="line">		DPrintf(<span class="string">&quot;[CommitIndex] Leader %d(term%d) commitIndex %d&quot;</span>,rf.me,rf.currentTerm,rf.commitIndex)</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>当超过半数的follower的matchIndex&gt;n时，说明日志已被复制超过半数，这时leader可以进行日志提交了</p>
+<h2 id="lab2C：中断恢复和持久化"><a href="#lab2C：中断恢复和持久化" class="headerlink" title="lab2C：中断恢复和持久化"></a>lab2C：中断恢复和持久化</h2><p>按照示例可以完成持久化和中断恢复，实际上就是读写磁盘</p>
+<h3 id="持久化"><a href="#持久化" class="headerlink" title="持久化"></a>持久化</h3><figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span> <span class="title">persist</span><span class="params">()</span></span> &#123;</span><br><span class="line">	<span class="comment">// Your code here (2C).</span></span><br><span class="line">	DPrintf(<span class="string">&quot;[%v]: STATE: %v&quot;</span>, rf.me, rf.log.String())</span><br><span class="line">	w := <span class="built_in">new</span>(bytes.Buffer)</span><br><span class="line">	e := labgob.NewEncoder(w)</span><br><span class="line">	e.Encode(rf.currentTerm)</span><br><span class="line">	e.Encode(rf.votedFor)</span><br><span class="line">	e.Encode(rf.log)</span><br><span class="line">	e.Encode(rf.lastSnapShotIndex)</span><br><span class="line">	e.Encode(rf.lastSnapShotTerm)</span><br><span class="line">	data := w.Bytes()</span><br><span class="line">	rf.persister.SaveRaftState(data)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="中断恢复"><a href="#中断恢复" class="headerlink" title="中断恢复"></a>中断恢复</h3><figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span> <span class="title">readPersist</span><span class="params">(data []<span class="keyword">byte</span>)</span></span> &#123;</span><br><span class="line">	<span class="keyword">if</span> data == <span class="literal">nil</span> || <span class="built_in">len</span>(data) &lt; <span class="number">1</span> &#123; <span class="comment">// bootstrap without any state?</span></span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">// Your code here (2C).</span></span><br><span class="line">	<span class="comment">// Example:</span></span><br><span class="line">	r := bytes.NewBuffer(data)</span><br><span class="line">	d := labgob.NewDecoder(r)</span><br><span class="line"></span><br><span class="line">	<span class="keyword">var</span> persist_currentTrem <span class="keyword">int</span></span><br><span class="line">	<span class="keyword">var</span> persist_voteFor <span class="keyword">int</span></span><br><span class="line">	<span class="keyword">var</span> persist_log []Entry</span><br><span class="line">	<span class="keyword">var</span> persist_lastSSPointIndex <span class="keyword">int</span></span><br><span class="line">	<span class="keyword">var</span> persist_lastSSPointTerm <span class="keyword">int</span></span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> d.Decode(&amp;persist_currentTrem) != <span class="literal">nil</span> ||</span><br><span class="line">		d.Decode(&amp;persist_voteFor) != <span class="literal">nil</span> ||</span><br><span class="line">		d.Decode(&amp;persist_log) != <span class="literal">nil</span> ||</span><br><span class="line">		d.Decode(&amp;persist_lastSSPointIndex) != <span class="literal">nil</span> ||</span><br><span class="line">		d.Decode(&amp;persist_lastSSPointTerm) != <span class="literal">nil</span> &#123;</span><br><span class="line">	&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">		rf.currentTerm = persist_currentTrem</span><br><span class="line">		rf.votedFor = persist_voteFor</span><br><span class="line">		rf.log = persist_log</span><br><span class="line">		rf.lastSnapShotIndex = persist_lastSSPointIndex</span><br><span class="line">		rf.lastSnapShotTerm = persist_lastSSPointTerm</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="lab2D：快照"><a href="#lab2D：快照" class="headerlink" title="lab2D：快照"></a>lab2D：快照</h2><p>日志压缩(log compaction)(第7节)</p>
+<ul>
+<li>对于避免日志无限制增长(growing without bound)是必要的(necessary)</li>
+</ul>
+<p>加速的(accelerated)日志回溯(backtracking)(第8页的左上角)</p>
+<ul>
+<li>对于使(bringing)陈旧的(stale)跟随者快速更新(up to date quickly)是有用的</li>
+</ul>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span> <span class="title">Snapshot</span><span class="params">(index <span class="keyword">int</span>, snapshot []<span class="keyword">byte</span>)</span></span> &#123;</span><br><span class="line">	<span class="comment">// Your code here (2D).</span></span><br><span class="line">	rf.mu.Lock()</span><br><span class="line">	<span class="keyword">defer</span> rf.mu.Unlock()</span><br><span class="line">	<span class="keyword">if</span> rf.lastSnapShotIndex &gt;= index || index &gt; rf.commitIndex&#123;</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line">	tempLog := <span class="built_in">make</span>([]Entry,<span class="number">0</span>)</span><br><span class="line">	tempLog = <span class="built_in">append</span>(tempLog,Entry&#123;&#125;)</span><br><span class="line">    <span class="comment">// 从index开始制造快照</span></span><br><span class="line">	<span class="keyword">for</span> i := index+<span class="number">1</span>;i&lt;=rf.getLastIndex();i++ &#123;</span><br><span class="line">		tempLog = <span class="built_in">append</span>(tempLog,rf.getLogWithIndex(i))</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> index == rf.getLastIndex()+<span class="number">1</span> &#123;</span><br><span class="line">		rf.lastSnapShotTerm = rf.getLastTerm()</span><br><span class="line">	&#125;<span class="keyword">else</span> &#123;</span><br><span class="line">		rf.lastSnapShotTerm = rf.getLogTermWithIndex(index)</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	rf.lastSnapShotIndex = index</span><br><span class="line">	rf.log = tempLog</span><br><span class="line">    <span class="comment">// 根据index更新</span></span><br><span class="line">	<span class="keyword">if</span> index &gt; rf.commitIndex&#123;</span><br><span class="line">		rf.commitIndex = index</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> index &gt; rf.lastApplied&#123;</span><br><span class="line">		rf.lastApplied = index</span><br><span class="line">	&#125;</span><br><span class="line">    <span class="comment">// 持久化</span></span><br><span class="line">	rf.persister.SaveStateAndSnapshot(rf.persistData(),snapshot)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+]]></content>
+      <categories>
+        <category>基于raft实现分布式KV</category>
+      </categories>
+      <tags>
+        <tag>基于raft实现分布式KV</tag>
+      </tags>
+  </entry>
+</search>
