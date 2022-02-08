@@ -28,7 +28,7 @@
 <meta property="og:description" content="Part A: Key&#x2F;value service without snapshots本实验要求你使用lab 2中的Raft库构建一个容错的Key&#x2F;Value服务。你的Key&#x2F;Value服务应该是由几个使用Raft来维护复制的key&#x2F;value服务器组成的一个复制状态机。尽管存在一些其他故障或网络分区，但只要大多数服务器还活着并可以通信，你的key&#x2F;value服务就应该继续处理客户端请求。但客户端">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2022-02-07T02:49:41.000Z">
-<meta property="article:modified_time" content="2022-02-07T11:05:02.197Z">
+<meta property="article:modified_time" content="2022-02-08T04:49:59.630Z">
 <meta property="article:author" content="Lehends">
 <meta property="article:tag" content="基于raft实现分布式KV">
 <meta name="twitter:card" content="summary">
@@ -213,10 +213,16 @@
                 <i class="far fa-calendar"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
-              
 
-              <time title="创建时间：2022-02-07 10:49:41 / 修改时间：19:05:02" itemprop="dateCreated datePublished" datetime="2022-02-07T10:49:41+08:00">2022-02-07</time>
+              <time title="创建时间：2022-02-07 10:49:41" itemprop="dateCreated datePublished" datetime="2022-02-07T10:49:41+08:00">2022-02-07</time>
             </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-02-08 12:49:59" itemprop="dateModified" datetime="2022-02-08T12:49:59+08:00">2022-02-08</time>
+              </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
                 <i class="far fa-folder"></i>
@@ -243,6 +249,8 @@
 <p>你可能对你甚至将如何根据一个复制的日志实现一个应用程序感到困惑……服务应该被构造为一个<strong>状态机</strong>，其中客户端操作将机器从一个状态转换到另一个状态。</p>
 </blockquote>
 <p>你的服务应该支持<code>Put(key, value)</code>，<code>Append(key, arg)</code>和<code>Get(key)</code>这些操作。每个客户端通过<code>Clerk</code>的<code>Put/Append/Get</code>方法与服务通信。<code>Clerk</code>管理与服务器的RPC交互。你的服务应该为调用<code>Clerk</code>的<code>Get/Put/Append</code>方法的应用程序提供<strong>强一致性</strong>。</p>
+<span id="more"></span>
+
 <blockquote>
 <p>你的每个key/value服务器都将有一个关联的Raft对等点(peer)。Clerks将<code>Put()</code>，<code>Append()</code>和<code>Get()</code>RPCs发送到其关联的Raft是领导者的kvserver。kvserver的代码将<code>Put/Append/Get</code>操作提交给Raft，以便Raft日志保存一个<code>Put/Append/Get</code>操作的序列。<strong>所有的kvserver</strong>都按顺序从Raft日志中执行操作，将这些操作应用到它们的key/value数据库；目的是让这些服务器维护key/value数据库的相同副本。<br>Clerk有时不知道哪个kvserver是Raft的领导者。如果Clerk将一个RPC发送到错误的kvserver，或者它无法到达kvserver，Clerk应该通过发送到一个不同的kvserver来重试。如果key/value服务器将操作提交到它的Raft日志(并因此将该操作应用到key/value状态机)，则领导者通过响应其RPC将结果报告给Clerk。如果操作未能提交(例如，如果领导者被替换)，服务器报告一个错误，并且Clerk用一个不同的服务器重试。</p>
 </blockquote>
@@ -279,16 +287,11 @@
 <p>对于每个客户端请求，你需要某种唯一的标识符……有许多方法可以分配这样的标识符。一种简单并且相当有效的方法是给每个客户端一个唯一的标识符，然后让它们用一个单调递增的序列号标记(tag)每个请求。如果一个客户端重新发送一个请求，则它重用相同的序列号。</p>
 </blockquote>
 <p>你的服务应该维护一个以client ID作为索引的map，其中的每个条目对应只含有seq number和如果已经执行的请求的结果值。这个去重map应该称为你的状态机的一部分，所有的副本在它们执行时都应该更新自己的去重map，这样如果它们称为leader，信息已经在那里了。</p>
-<h3 id="客户端超时重试"><a href="#客户端超时重试" class="headerlink" title="客户端超时重试"></a>客户端超时重试</h3><p>客户端需要重试重试机制，这时因为：我们的服务完全是依靠<code>applyCh</code>上出现的<code>applyMsg</code>驱动的，如果某peer作为original leader接收了客户端的请求，但在将请求提交之前失去了领导地位，那么该请求就不会出现在applyCh上，接收该请求的RPC handler一直处于等待状态。又因为线性一致性语义假设一个客户端一次只对Clerk进行一次调用，也就是说本次请求没有得到响应前，不会发起新的请求，这就出现了死锁：kvserver等待客户端发起新的请求，其被提交后出现在applyCh上，以便可以唤醒等待的RPC handler；而RPC handler处于等待状态，无法回复客户端请求，本次客户端请求没有得到响应，无法发起新的请求，整个服务陷入死锁。解决方案有两种：</p>
-<ol>
-<li>RPC handler本身加入检测leader是否被替换的功能，即我们之前实现的<code>detectDeposed goroutine</code>，其周期性地调用<code>rf.GetState()</code>，判断是否不再是leader或者任期发生变化，从而检测leader是否被替换。</li>
+<h3 id="客户端超时重试"><a href="#客户端超时重试" class="headerlink" title="客户端超时重试"></a>客户端超时重试</h3><p>客户端需要重试重试机制，这时因为：我们的服务完全是依靠<code>applyCh</code>上出现的<code>applyMsg</code>驱动的，如果某peer作为original leader接收了客户端的请求，但在将请求提交之前失去了领导地位，那么该请求就不会出现在applyCh上，接收该请求的RPC handler一直处于等待状态。又因为线性一致性语义假设一个客户端一次只对Clerk进行一次调用，也就是说本次请求没有得到响应前，不会发起新的请求，这就出现了死锁：kvserver等待客户端发起新的请求，其被提交后出现在applyCh上，以便可以唤醒等待的RPC handler；而RPC handler处于等待状态，无法回复客户端请求，本次客户端请求没有得到响应，无法发起新的请求，整个服务陷入死锁。解决方案：</p>
+<ol start="2">
 <li>客户端请求加入超时重试机制，超时后主动进行重试。</li>
 </ol>
-<p>发生客户端超时重试时，上次的客户端请求被认为是失败的，再次发起重试。<br>实现客户端超时重试需要两个步骤：</p>
-<ol>
-<li>将目前Clerk同步的RPC调用通过goroutine改为异步，通过一个<code>replyCh</code>可以得到RPC调用的执行结果。</li>
-<li>Clerk发送程序同时监听<code>replyCh</code>和<code>timeoutCh</code>两个事件，如果得到kvserver的请求执行结果则成功返回到客户端；如果执行出错或者超时，则进行重试。</li>
-</ol>
+<p>发生客户端超时重试时，上次的客户端请求被认为是失败的，再次发起重试。</p>
 <h2 id="Part-B-Key-value-service-with-snapshots"><a href="#Part-B-Key-value-service-with-snapshots" class="headerlink" title="Part B: Key/value service with snapshots"></a>Part B: Key/value service with snapshots</h2><p>这里的实现和lab2类似</p>
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">测试人员将maxraftstate传递给您的 StartKVServer()。</span><br><span class="line">maxraftstate表示持久 Raft 状态的最大允许大小（以字节为单位）（包括日志，但不包括快照）。</span><br><span class="line">您应该将maxraftstate与persister.RaftStateSize()进行比较。</span><br><span class="line">每当您的键/值服务器检测到 Raft 状态大小接近此阈值时，它应该使用Snapshot保存快照</span><br><span class="line">，而后者又使用persister.SaveRaftState()。如果maxraftstate为 -1，则不必进行快照。</span><br><span class="line">maxraftstate适用于 Raft 传递给persister.SaveRaftState()的 GOB 编码字节。</span><br></pre></td></tr></table></figure>
     </div>

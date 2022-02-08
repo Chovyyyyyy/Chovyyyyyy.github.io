@@ -79,52 +79,6 @@
       </tags>
   </entry>
   <entry>
-    <title>goRPC（2）高性能客户端</title>
-    <url>/2021/12/31/RPC-Part2-%E9%AB%98%E6%80%A7%E8%83%BD%E5%AE%A2%E6%88%B7%E7%AB%AF/</url>
-    <content><![CDATA[<h1 id="高性能服务端"><a href="#高性能服务端" class="headerlink" title="高性能服务端"></a>高性能服务端</h1><h2 id="Call的设计"><a href="#Call的设计" class="headerlink" title="Call的设计"></a>Call的设计</h2><p>对<code>rpc</code>包来说，一个函数需要能够被远程调用，需要满足：</p>
-<ul>
-<li>方法导出类型</li>
-<li>方法有两个参数，都是导出类型</li>
-<li>方法第二个参数是指针</li>
-<li>方法返回类别为error</li>
-</ul>
-<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(t *T)</span> <span class="title">MethodName</span><span class="params">(argType T1, replyType *T2)</span> <span class="title">error</span></span></span><br></pre></td></tr></table></figure>
-
-<span id="more"></span>
-
-<h2 id="实现Client"><a href="#实现Client" class="headerlink" title="实现Client"></a>实现Client</h2><p>Client字段比较复杂：</p>
-<ul>
-<li>cc：是消息的编译码器，和服务端类似，用来序列化将要发送出去的请求，以及反序列化接收到的响应</li>
-<li>sending：是一个互斥锁，和服务端类似，为了保证请求的有序发送，即防止出现多个请求报文混淆</li>
-<li>header：是每个请求的消息头，header只有在请求发送时才需要，而请求发送是互斥的，因此每个客户端只需要一个，生命在Client结构体中可以复用</li>
-<li>seq：用于给发送的请求编号，每个请求拥有唯一编号</li>
-<li>pending：存储未处理完的请求，键是编号，值是Call实例</li>
-<li>closing和shutdown任意一个值置为true，则表示Client处于不可用的状态，closing是用户关闭，shutdown一般是错误发生</li>
-</ul>
-<p>对于一个客户端来说，接收响应，发送请求是最重要的2个功能。</p>
-<p>创建连接：</p>
-<ul>
-<li>首先创建实例</li>
-<li>然后完成一开始的协议交换，发送<code>Option</code>给服务端</li>
-<li>最后在创建一个子协程调用<code>receive()</code>接收响应</li>
-</ul>
-<p>接收到的响应有三种情况：</p>
-<ul>
-<li>call 不存在，可能是请求没有发送完整，或者因为其他原因被取消，但是服务端仍然处理了</li>
-<li>call存在，但是服务端处理错误，即h.Error不为空</li>
-<li>call存在，服务端处理正常，那么需要从body中读取Reply的值</li>
-</ul>
-<p>发送请求通过客户端暴露给用户的两个RPC服务调用接口，一个同步一个异步</p>
-<p><a href="https://github.com/Chovyyyyyy/goRPC/tree/main/client">高性能客户端的github地址</a></p>
-]]></content>
-      <categories>
-        <category>RPC</category>
-      </categories>
-      <tags>
-        <tag>RPC</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>goRPC（1）编译码器和简易客户端服务器实现</title>
     <url>/2021/12/30/RPC-Part1-%E7%BC%96%E8%AF%91%E7%A0%81%E5%99%A8%E5%92%8C%E7%AE%80%E6%98%93%E5%AE%A2%E6%88%B7%E7%AB%AF%E6%9C%8D%E5%8A%A1%E5%99%A8%E5%AE%9E%E7%8E%B0/</url>
     <content><![CDATA[<h1 id="goRPC"><a href="#goRPC" class="headerlink" title="goRPC"></a>goRPC</h1><p>这次没有使用Java去实现RPC框架，虽然Java的生态很完整，有netty框架等等，但是出于接下来的6.824（lab2A写完了，确实是有难度，寒假再说）需要用go实现的原因，想要利用RPC框架提升自己go的工程能力；其次，go处理并发问题较Java更为方便，代码相对更加简洁</p>
@@ -150,6 +104,50 @@
 <p>代码是并发处理请求的，但是回复请求如果并发回复会导致消息错乱，所以要使用<code>lock</code></p>
 <h3 id="客户端实现"><a href="#客户端实现" class="headerlink" title="客户端实现"></a>客户端实现</h3><p>我们实现了一个消息的编译码器，并且客户端与服务端实现了简单的协议交换。同时实现了简易服务端，建立连接，读取，处理并回复客户端的请求</p>
 <p><a href="https://github.com/Chovyyyyyy/goRPC/tree/main/mainCodec">编译码器和简易客户端服务器实现的github地址</a></p>
+]]></content>
+      <categories>
+        <category>RPC</category>
+      </categories>
+      <tags>
+        <tag>RPC</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>goRPC（3）注册中心实现</title>
+    <url>/2022/01/06/RPC-Part3-%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83/</url>
+    <content><![CDATA[<h2 id="将结构体映射为服务"><a href="#将结构体映射为服务" class="headerlink" title="将结构体映射为服务"></a>将结构体映射为服务</h2><p>RPC框架的一个基础能力是：像调用本地程序一样调用远程服务。对于go来说，这个问题就变成如何将结构体映射为服务</p>
+<span id="more"></span>
+
+<p>对<code>net/rpc</code>来说，一个函数需要能够被远程调用，需要满足</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(t *T)</span> <span class="title">MethodName</span><span class="params">(argType T1, replyType *T2)</span> <span class="title">error</span></span></span><br></pre></td></tr></table></figure>
+
+<p>假如客户端发送一个请求，包含Method和Argv，我们就可以用通过反射获取某个结构体的所有方法，并且通过方法，获取到该方法所有的参数类型与返回值</p>
+<h2 id="通过反射实现service"><a href="#通过反射实现service" class="headerlink" title="通过反射实现service"></a>通过反射实现service</h2><h3 id="定义结构体methodType"><a href="#定义结构体methodType" class="headerlink" title="定义结构体methodType"></a>定义结构体methodType</h3><figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="keyword">type</span> methodType <span class="keyword">struct</span> &#123;</span><br><span class="line">	method    reflect.Method</span><br><span class="line">	ArgType   reflect.Type</span><br><span class="line">	ReplyType reflect.Type</span><br><span class="line">	numCalls  <span class="keyword">uint64</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<p>每个methodType实例包含了一个方法的完整信息</p>
+<ul>
+<li>method：方法本身</li>
+<li>ArgType：第一个参数的类型</li>
+<li>ReplyType：第二个参数的类型</li>
+<li>numCalls：后续统计方法调用次数时会用到</li>
+</ul>
+<h3 id="定义结构体service"><a href="#定义结构体service" class="headerlink" title="定义结构体service"></a>定义结构体service</h3><figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="keyword">type</span> service <span class="keyword">struct</span> &#123;</span><br><span class="line">	name   <span class="keyword">string</span></span><br><span class="line">	typ    reflect.Type</span><br><span class="line">	rcvr   reflect.Value</span><br><span class="line">	method <span class="keyword">map</span>[<span class="keyword">string</span>]*methodType</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>name：映射的结构体的名称</li>
+<li>typ：结构体的类型</li>
+<li>rcvr：结构体实例本身</li>
+<li>method：存储映射的结构体的所有符合条件的方法</li>
+</ul>
+<h2 id="集成到服务端"><a href="#集成到服务端" class="headerlink" title="集成到服务端"></a>集成到服务端</h2><p>从接收到请求到回复还差以下几个步骤：</p>
+<ol>
+<li>根据入参类型，将请求的body反序列化</li>
+<li>调用<code>service.call</code>，完成方法调用</li>
+<li>将<code>reply</code>序列化为字节流，构造响应报文，返回</li>
+</ol>
+<p><a href="https://github.com/Chovyyyyyy/goRPC/tree/main/service">注册中心的github地址</a></p>
 ]]></content>
       <categories>
         <category>RPC</category>
@@ -206,50 +204,6 @@
       </tags>
   </entry>
   <entry>
-    <title>goRPC（3）注册中心实现</title>
-    <url>/2022/01/06/RPC-Part3-%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83/</url>
-    <content><![CDATA[<h2 id="将结构体映射为服务"><a href="#将结构体映射为服务" class="headerlink" title="将结构体映射为服务"></a>将结构体映射为服务</h2><p>RPC框架的一个基础能力是：像调用本地程序一样调用远程服务。对于go来说，这个问题就变成如何将结构体映射为服务</p>
-<span id="more"></span>
-
-<p>对<code>net/rpc</code>来说，一个函数需要能够被远程调用，需要满足</p>
-<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(t *T)</span> <span class="title">MethodName</span><span class="params">(argType T1, replyType *T2)</span> <span class="title">error</span></span></span><br></pre></td></tr></table></figure>
-
-<p>假如客户端发送一个请求，包含Method和Argv，我们就可以用通过反射获取某个结构体的所有方法，并且通过方法，获取到该方法所有的参数类型与返回值</p>
-<h2 id="通过反射实现service"><a href="#通过反射实现service" class="headerlink" title="通过反射实现service"></a>通过反射实现service</h2><h3 id="定义结构体methodType"><a href="#定义结构体methodType" class="headerlink" title="定义结构体methodType"></a>定义结构体methodType</h3><figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="keyword">type</span> methodType <span class="keyword">struct</span> &#123;</span><br><span class="line">	method    reflect.Method</span><br><span class="line">	ArgType   reflect.Type</span><br><span class="line">	ReplyType reflect.Type</span><br><span class="line">	numCalls  <span class="keyword">uint64</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-
-
-<p>每个methodType实例包含了一个方法的完整信息</p>
-<ul>
-<li>method：方法本身</li>
-<li>ArgType：第一个参数的类型</li>
-<li>ReplyType：第二个参数的类型</li>
-<li>numCalls：后续统计方法调用次数时会用到</li>
-</ul>
-<h3 id="定义结构体service"><a href="#定义结构体service" class="headerlink" title="定义结构体service"></a>定义结构体service</h3><figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="keyword">type</span> service <span class="keyword">struct</span> &#123;</span><br><span class="line">	name   <span class="keyword">string</span></span><br><span class="line">	typ    reflect.Type</span><br><span class="line">	rcvr   reflect.Value</span><br><span class="line">	method <span class="keyword">map</span>[<span class="keyword">string</span>]*methodType</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>name：映射的结构体的名称</li>
-<li>typ：结构体的类型</li>
-<li>rcvr：结构体实例本身</li>
-<li>method：存储映射的结构体的所有符合条件的方法</li>
-</ul>
-<h2 id="集成到服务端"><a href="#集成到服务端" class="headerlink" title="集成到服务端"></a>集成到服务端</h2><p>从接收到请求到回复还差以下几个步骤：</p>
-<ol>
-<li>根据入参类型，将请求的body反序列化</li>
-<li>调用<code>service.call</code>，完成方法调用</li>
-<li>将<code>reply</code>序列化为字节流，构造响应报文，返回</li>
-</ol>
-<p><a href="https://github.com/Chovyyyyyy/goRPC/tree/main/service">注册中心的github地址</a></p>
-]]></content>
-      <categories>
-        <category>RPC</category>
-      </categories>
-      <tags>
-        <tag>RPC</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>goRPC（5）支持HTTP</title>
     <url>/2022/01/16/RPC-Part5-%E6%94%AF%E6%8C%81HTTP/</url>
     <content><![CDATA[<h2 id="为什么要支持HTTP协议"><a href="#为什么要支持HTTP协议" class="headerlink" title="为什么要支持HTTP协议"></a>为什么要支持HTTP协议</h2><p>在我们平时做项目时，经常会使用HTTP协议中的HEAD，GET，POST等方式来发送请求，等待响应。但RPC的消息格式和标准的HTTP协议并不兼容，这就需要一个协议的转换过程。HTTP协议的CONNECT方法恰好提供了这个功能，CONNECT一般用于代理服务</p>
@@ -294,6 +248,52 @@
 <figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="comment">// NewHTTPClient 通过 HTTP 作为传输协议新建一个客户端实例</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">NewHTTPClient</span><span class="params">(conn net.Conn, opt *Option)</span> <span class="params">(*Client, error)</span></span> &#123;</span><br><span class="line">	_, _ = io.WriteString(conn, fmt.Sprintf(<span class="string">&quot;CONNECT %s HTTP/1.0\n\n&quot;</span>, defaultRPCPath))</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 在切换到 RPC 协议之前需要成功的 HTTP 响应</span></span><br><span class="line">	resp, err := http.ReadResponse(bufio.NewReader(conn), &amp;http.Request&#123;Method: <span class="string">&quot;CONNECT&quot;</span>&#125;)</span><br><span class="line">	<span class="keyword">if</span> err == <span class="literal">nil</span> &amp;&amp; resp.Status == connected &#123;</span><br><span class="line">		<span class="keyword">return</span> NewClient(conn, opt)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> err == <span class="literal">nil</span> &#123;</span><br><span class="line">		err = errors.New(<span class="string">&quot;unexpected HTTP response: &quot;</span> + resp.Status)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> <span class="literal">nil</span>, err</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
 <p><a href="https://github.com/Chovyyyyyy/goRPC/tree/main/httpDebug">支持http的github地址</a></p>
+]]></content>
+      <categories>
+        <category>RPC</category>
+      </categories>
+      <tags>
+        <tag>RPC</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>goRPC（2）高性能客户端</title>
+    <url>/2021/12/31/RPC-Part2-%E9%AB%98%E6%80%A7%E8%83%BD%E5%AE%A2%E6%88%B7%E7%AB%AF/</url>
+    <content><![CDATA[<h1 id="高性能服务端"><a href="#高性能服务端" class="headerlink" title="高性能服务端"></a>高性能服务端</h1><h2 id="Call的设计"><a href="#Call的设计" class="headerlink" title="Call的设计"></a>Call的设计</h2><p>对<code>rpc</code>包来说，一个函数需要能够被远程调用，需要满足：</p>
+<ul>
+<li>方法导出类型</li>
+<li>方法有两个参数，都是导出类型</li>
+<li>方法第二个参数是指针</li>
+<li>方法返回类别为error</li>
+</ul>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(t *T)</span> <span class="title">MethodName</span><span class="params">(argType T1, replyType *T2)</span> <span class="title">error</span></span></span><br></pre></td></tr></table></figure>
+
+<span id="more"></span>
+
+<h2 id="实现Client"><a href="#实现Client" class="headerlink" title="实现Client"></a>实现Client</h2><p>Client字段比较复杂：</p>
+<ul>
+<li>cc：是消息的编译码器，和服务端类似，用来序列化将要发送出去的请求，以及反序列化接收到的响应</li>
+<li>sending：是一个互斥锁，和服务端类似，为了保证请求的有序发送，即防止出现多个请求报文混淆</li>
+<li>header：是每个请求的消息头，header只有在请求发送时才需要，而请求发送是互斥的，因此每个客户端只需要一个，生命在Client结构体中可以复用</li>
+<li>seq：用于给发送的请求编号，每个请求拥有唯一编号</li>
+<li>pending：存储未处理完的请求，键是编号，值是Call实例</li>
+<li>closing和shutdown任意一个值置为true，则表示Client处于不可用的状态，closing是用户关闭，shutdown一般是错误发生</li>
+</ul>
+<p>对于一个客户端来说，接收响应，发送请求是最重要的2个功能。</p>
+<p>创建连接：</p>
+<ul>
+<li>首先创建实例</li>
+<li>然后完成一开始的协议交换，发送<code>Option</code>给服务端</li>
+<li>最后在创建一个子协程调用<code>receive()</code>接收响应</li>
+</ul>
+<p>接收到的响应有三种情况：</p>
+<ul>
+<li>call 不存在，可能是请求没有发送完整，或者因为其他原因被取消，但是服务端仍然处理了</li>
+<li>call存在，但是服务端处理错误，即h.Error不为空</li>
+<li>call存在，服务端处理正常，那么需要从body中读取Reply的值</li>
+</ul>
+<p>发送请求通过客户端暴露给用户的两个RPC服务调用接口，一个同步一个异步</p>
+<p><a href="https://github.com/Chovyyyyyy/goRPC/tree/main/client">高性能客户端的github地址</a></p>
 ]]></content>
       <categories>
         <category>RPC</category>
@@ -377,6 +377,8 @@
 <p>你可能对你甚至将如何根据一个复制的日志实现一个应用程序感到困惑……服务应该被构造为一个<strong>状态机</strong>，其中客户端操作将机器从一个状态转换到另一个状态。</p>
 </blockquote>
 <p>你的服务应该支持<code>Put(key, value)</code>，<code>Append(key, arg)</code>和<code>Get(key)</code>这些操作。每个客户端通过<code>Clerk</code>的<code>Put/Append/Get</code>方法与服务通信。<code>Clerk</code>管理与服务器的RPC交互。你的服务应该为调用<code>Clerk</code>的<code>Get/Put/Append</code>方法的应用程序提供<strong>强一致性</strong>。</p>
+<span id="more"></span>
+
 <blockquote>
 <p>你的每个key/value服务器都将有一个关联的Raft对等点(peer)。Clerks将<code>Put()</code>，<code>Append()</code>和<code>Get()</code>RPCs发送到其关联的Raft是领导者的kvserver。kvserver的代码将<code>Put/Append/Get</code>操作提交给Raft，以便Raft日志保存一个<code>Put/Append/Get</code>操作的序列。<strong>所有的kvserver</strong>都按顺序从Raft日志中执行操作，将这些操作应用到它们的key/value数据库；目的是让这些服务器维护key/value数据库的相同副本。<br>Clerk有时不知道哪个kvserver是Raft的领导者。如果Clerk将一个RPC发送到错误的kvserver，或者它无法到达kvserver，Clerk应该通过发送到一个不同的kvserver来重试。如果key/value服务器将操作提交到它的Raft日志(并因此将该操作应用到key/value状态机)，则领导者通过响应其RPC将结果报告给Clerk。如果操作未能提交(例如，如果领导者被替换)，服务器报告一个错误，并且Clerk用一个不同的服务器重试。</p>
 </blockquote>
@@ -413,16 +415,11 @@
 <p>对于每个客户端请求，你需要某种唯一的标识符……有许多方法可以分配这样的标识符。一种简单并且相当有效的方法是给每个客户端一个唯一的标识符，然后让它们用一个单调递增的序列号标记(tag)每个请求。如果一个客户端重新发送一个请求，则它重用相同的序列号。</p>
 </blockquote>
 <p>你的服务应该维护一个以client ID作为索引的map，其中的每个条目对应只含有seq number和如果已经执行的请求的结果值。这个去重map应该称为你的状态机的一部分，所有的副本在它们执行时都应该更新自己的去重map，这样如果它们称为leader，信息已经在那里了。</p>
-<h3 id="客户端超时重试"><a href="#客户端超时重试" class="headerlink" title="客户端超时重试"></a>客户端超时重试</h3><p>客户端需要重试重试机制，这时因为：我们的服务完全是依靠<code>applyCh</code>上出现的<code>applyMsg</code>驱动的，如果某peer作为original leader接收了客户端的请求，但在将请求提交之前失去了领导地位，那么该请求就不会出现在applyCh上，接收该请求的RPC handler一直处于等待状态。又因为线性一致性语义假设一个客户端一次只对Clerk进行一次调用，也就是说本次请求没有得到响应前，不会发起新的请求，这就出现了死锁：kvserver等待客户端发起新的请求，其被提交后出现在applyCh上，以便可以唤醒等待的RPC handler；而RPC handler处于等待状态，无法回复客户端请求，本次客户端请求没有得到响应，无法发起新的请求，整个服务陷入死锁。解决方案有两种：</p>
-<ol>
-<li>RPC handler本身加入检测leader是否被替换的功能，即我们之前实现的<code>detectDeposed goroutine</code>，其周期性地调用<code>rf.GetState()</code>，判断是否不再是leader或者任期发生变化，从而检测leader是否被替换。</li>
+<h3 id="客户端超时重试"><a href="#客户端超时重试" class="headerlink" title="客户端超时重试"></a>客户端超时重试</h3><p>客户端需要重试重试机制，这时因为：我们的服务完全是依靠<code>applyCh</code>上出现的<code>applyMsg</code>驱动的，如果某peer作为original leader接收了客户端的请求，但在将请求提交之前失去了领导地位，那么该请求就不会出现在applyCh上，接收该请求的RPC handler一直处于等待状态。又因为线性一致性语义假设一个客户端一次只对Clerk进行一次调用，也就是说本次请求没有得到响应前，不会发起新的请求，这就出现了死锁：kvserver等待客户端发起新的请求，其被提交后出现在applyCh上，以便可以唤醒等待的RPC handler；而RPC handler处于等待状态，无法回复客户端请求，本次客户端请求没有得到响应，无法发起新的请求，整个服务陷入死锁。解决方案：</p>
+<ol start="2">
 <li>客户端请求加入超时重试机制，超时后主动进行重试。</li>
 </ol>
-<p>发生客户端超时重试时，上次的客户端请求被认为是失败的，再次发起重试。<br>实现客户端超时重试需要两个步骤：</p>
-<ol>
-<li>将目前Clerk同步的RPC调用通过goroutine改为异步，通过一个<code>replyCh</code>可以得到RPC调用的执行结果。</li>
-<li>Clerk发送程序同时监听<code>replyCh</code>和<code>timeoutCh</code>两个事件，如果得到kvserver的请求执行结果则成功返回到客户端；如果执行出错或者超时，则进行重试。</li>
-</ol>
+<p>发生客户端超时重试时，上次的客户端请求被认为是失败的，再次发起重试。</p>
 <h2 id="Part-B-Key-value-service-with-snapshots"><a href="#Part-B-Key-value-service-with-snapshots" class="headerlink" title="Part B: Key/value service with snapshots"></a>Part B: Key/value service with snapshots</h2><p>这里的实现和lab2类似</p>
 <figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">测试人员将maxraftstate传递给您的 StartKVServer()。</span><br><span class="line">maxraftstate表示持久 Raft 状态的最大允许大小（以字节为单位）（包括日志，但不包括快照）。</span><br><span class="line">您应该将maxraftstate与persister.RaftStateSize()进行比较。</span><br><span class="line">每当您的键/值服务器检测到 Raft 状态大小接近此阈值时，它应该使用Snapshot保存快照</span><br><span class="line">，而后者又使用persister.SaveRaftState()。如果maxraftstate为 -1，则不必进行快照。</span><br><span class="line">maxraftstate适用于 Raft 传递给persister.SaveRaftState()的 GOB 编码字节。</span><br></pre></td></tr></table></figure>]]></content>
       <categories>
